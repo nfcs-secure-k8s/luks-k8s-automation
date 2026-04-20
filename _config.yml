@@ -1,0 +1,32 @@
+title: "Secure K8s Storage"
+author: "NFCS Storage Encryption Project"
+
+exclude_patterns:
+  [
+    ".venv",
+    ".ipynb_checkpoints",
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "lib",
+    "bin",
+    "include",
+  ]
+
+parse:
+  myst_enable_extensions:
+    - colon_fence
+
+html:
+  use_repository_button: false
+  use_issues_button: false
+  use_download_button: true
+  number_sections: false
+  home_page_in_toc: true
+
+execute:
+  execute_notebooks: off
+
+sphinx:
+  extra_extensions:
+    - sphinxcontrib.mermaid

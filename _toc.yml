@@ -1,0 +1,9 @@
+format: jb-book
+root: intro
+chapters:
+  - file: summary
+  - file: background
+  - file: requirements
+  - file: cloud_encryption
+  - file: poc_luks
+  - file: vault
