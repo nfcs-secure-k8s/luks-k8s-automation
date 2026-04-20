@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: |
-          pip install "jupyter-book<1.0" sphinx-book-theme
+          pip install "jupyter-book<1.0" sphinx-book-theme, sphinxcontrib-mermaid
       - name: Build the book
         run: |
           jb build .
