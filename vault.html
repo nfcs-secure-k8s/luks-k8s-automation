@@ -328,6 +328,7 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-design">Implementation Design</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-version-synchronisation">Vault Version Synchronisation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operator-driven-key-rotation">Operator-Driven Key Rotation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-and-key-deletion">Volume and Key deletion</a></li>
 </ul>
             </nav>
         </div>
@@ -377,7 +378,7 @@ The Operator reads the current secret metadata from the vault to retrieve the KV
 </section>
 <section id="operator-driven-key-rotation">
 <h2>Operator-Driven Key Rotation<a class="headerlink" href="#operator-driven-key-rotation" title="Permalink to this heading">#</a></h2>
-<p>The second controller function watches for changes in the metadata.annotations.vaultversion field for a version number change. When the Operator detects a version number increase, it knows a key change has been made and then dispatches a job to perform the following:</p>
+<p>The second controller function watches for changes in the <code class="docutils literal notranslate"><span class="pre">metadata.annotations.vaultversion</span></code> field for a version number change. When the Operator detects a version number increase, it knows a key change has been made and then dispatches a job to perform the following:</p>
 <ol class="arabic simple">
 <li><p>reads the new key from the latest Vault version</p></li>
 <li><p>reads the previous key from the prior Vault version</p></li>
@@ -390,6 +391,17 @@ The Operator reads the current secret metadata from the vault to retrieve the KV
 <li><p>followed by <code class="docutils literal notranslate"><span class="pre">cryptsetup</span> <span class="pre">luksRemoveKey</span></code></p></li>
 </ul>
 <p>After the key rotation is complete, the encrypted volume is updated in place. The Operator records the processed version in the resource status so that the rotation is not repeated unnecessarily.</p>
+</section>
+<section id="volume-and-key-deletion">
+<h2>Volume and Key deletion<a class="headerlink" href="#volume-and-key-deletion" title="Permalink to this heading">#</a></h2>
+<p>Another vault integration feature performed by the Operator is the deletion of the encrypted volume and key. To do this, the Operator performs the following:</p>
+<ol class="arabic simple">
+<li><p>Pod eviction to release active disk handles</p></li>
+<li><p>janitor job execution on the relevant node to close the LUKS device mapper</p></li>
+<li><p>Vault secret destruction if deletion policy is set to Delete</p></li>
+<li><p>PVC deletion if the deletion policy is set to Delete</p></li>
+</ol>
+<p>This action is significant as it ensures that recovery of the plaintext data becomes substantially harder when the encrypted volume and keys are deleted, assuming no unmanaged copies of keys exist elsewhere.</p>
 </section>
 </section>
 
@@ -462,6 +474,7 @@ The Operator reads the current secret metadata from the vault to retrieve the KV
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-design">Implementation Design</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-version-synchronisation">Vault Version Synchronisation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operator-driven-key-rotation">Operator-Driven Key Rotation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-and-key-deletion">Volume and Key deletion</a></li>
 </ul>
   </nav></div>
 
