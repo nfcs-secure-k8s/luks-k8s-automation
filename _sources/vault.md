@@ -58,4 +58,4 @@ Another vault integration feature performed by the Operator is the deletion of t
 3. Vault secret destruction if deletion policy is set to Delete
 4. PVC deletion if the deletion policy is set to Delete
 
-This action is significant as it ensures that recovery of the plaintext data becomes substantially harder when the encrypted volume and keys are deleted, assuming no unmanaged copies of keys exist elsewhere.
+This action is important as it ensures that recovery of the plaintext data becomes substantially harder when the encrypted volume and keys are deleted, as long as no unmanaged copies of keys exist elsewhere.
