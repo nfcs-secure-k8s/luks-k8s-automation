@@ -7,8 +7,7 @@ In order for different institutions to manage their own encryption keys, we move
 ### Purpose of Vault Integration
 
 The initial proof of concept we introduced earlier demonstrated that block storage can be encrypted using Kubernetes, an operator, and LUKS. However, this does not provide the level of governance, auditability, and controlled life cycle required in a Trusted Research Environment.
-
-### The Vault integration was therefore introduced to address three requirements:
+The Vault integration was therefore introduced to address three requirements:
 
 - centralized key storage
 - controlled key rotation
