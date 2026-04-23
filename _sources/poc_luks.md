@@ -1,4 +1,6 @@
-# Implemented Proof-of-Concept: Kubernetes Operator driven LUKS encryption
+~~# Implemented Proof-of-Concept: Kubernetes Operator driven LUKS encryption~~
+
+# Kubernetes Operator driven LUKS encryption using Kubernetes Secrets
 
 ## Purpose and Scope
 
