@@ -36,7 +36,7 @@ This mechanism provides the following benefits:
 
 ### Operator-Driven Key Rotation
 
-The second controller function watches for changes in the metadata.annotations.vaultversion field for a version number change. When the Operator detects a version number increase, it knows a key change has been made and then dispatches a job to perform the following:
+The second controller function watches for changes in the `metadata.annotations.vaultversion` field for a version number change. When the Operator detects a version number increase, it knows a key change has been made and then dispatches a job to perform the following:
 
 1. reads the new key from the latest Vault version
 2. reads the previous key from the prior Vault version
@@ -48,3 +48,14 @@ The second controller function watches for changes in the metadata.annotations.v
 - followed by `cryptsetup luksRemoveKey`
 
 After the key rotation is complete, the encrypted volume is updated in place. The Operator records the processed version in the resource status so that the rotation is not repeated unnecessarily.
+
+## Volume and Key deletion
+
+Another vault integration feature performed by the Operator is the deletion of the encrypted volume and key. To do this, the Operator performs the following:
+
+1. Pod eviction to release active disk handles
+2. janitor job execution on the relevant node to close the LUKS device mapper
+3. Vault secret destruction if deletion policy is set to Delete
+4. PVC deletion if the deletion policy is set to Delete
+
+This action is significant as it ensures that recovery of the plaintext data becomes substantially harder when the encrypted volume and keys are deleted, assuming no unmanaged copies of keys exist elsewhere.
