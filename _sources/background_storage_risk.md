@@ -1,4 +1,4 @@
-# Automated Encryption of Kubernetes Block Storage for Trusted Research Environment
+# Background and Context
 
 For researchers carrying out experiments on sensitive data, there is a clear need to ensure that the volumes storing that data are encrypted at rest. In OpenStack, the existing approach typically relies on Cinder volume encryption with Barbican for key management. However, in this model, key management remains under the control of the hosting administrator. It is also not straightforward to provide strong per-project, per-institution, or research-domain-specific key isolation, because native Cinder encryption is generally implemented at the infrastructure level rather than being designed around independent tenant-controlled key ownership.
 

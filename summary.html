@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Executive Summary &#8212; Secure K8s Storage</title>
+    <title>Automated Encryption of Kubernetes Block Storage for Trusted Research Environment &#8212; Secure K8s Storage</title>
   
   
   
@@ -65,8 +65,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'summary';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Background and Context" href="background.html" />
-    <link rel="prev" title="Automated Encryption of Kubernetes Block Storage for Trusted Research Environment" href="intro.html" />
+    <link rel="next" title="Background and Context" href="background_storage_risk.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -129,6 +128,8 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
+        
+      
       <div class="bd-sidebar-primary bd-sidebar">
         
 
@@ -147,7 +148,7 @@ const thebe_selector_output = ".output, .cell_output"
     
   
 
-<a class="navbar-brand logo" href="intro.html">
+<a class="navbar-brand logo" href="#">
   
   
   
@@ -161,16 +162,15 @@ const thebe_selector_output = ".output, .cell_output"
     <div class="bd-toc-item navbar-nav active">
         
         <ul class="nav bd-sidenav bd-sidenav__home-link">
-            <li class="toctree-l1">
-                <a class="reference internal" href="intro.html">
+            <li class="toctree-l1 current active">
+                <a class="reference internal" href="#">
                     Automated Encryption of Kubernetes Block Storage for Trusted Research Environment
                 </a>
             </li>
         </ul>
-        <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Executive Summary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="background.html">Background and Context</a></li>
-<li class="toctree-l1"><a class="reference internal" href="requirements.html">User and Stakeholder Requirements</a></li>
+        <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cloud_encryption.html">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="poc_luks.html">Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vault.html">Vault Integration</a></li>
@@ -313,7 +313,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Executive Summary</h1>
+    <h1>Automated Encryption of Kubernetes Block Storage for Trusted Research Environment</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -323,8 +323,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#purpose">Purpose:</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-finding-so-far">Key Finding so far:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#executive-summary">Executive Summary</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#current-maturity">Current Maturity:</a></li>
 </ul>
 </li>
@@ -339,21 +338,17 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="executive-summary">
-<h1>Executive Summary<a class="headerlink" href="#executive-summary" title="Permalink to this heading">#</a></h1>
-<section id="purpose">
-<h2>Purpose:<a class="headerlink" href="#purpose" title="Permalink to this heading">#</a></h2>
-<p>This report evaluates the automation of per-volume Kubernetes block Cinder storage in a Trusted Research Environment (TRE) environment using LUKS (Linux Unified Key setup), Kubernetes custom operator with Kopf.</p>
-<section id="key-finding-so-far">
-<h3>Key Finding so far:<a class="headerlink" href="#key-finding-so-far" title="Permalink to this heading">#</a></h3>
+  <section id="automated-encryption-of-kubernetes-block-storage-for-trusted-research-environment">
+<h1>Automated Encryption of Kubernetes Block Storage for Trusted Research Environment<a class="headerlink" href="#automated-encryption-of-kubernetes-block-storage-for-trusted-research-environment" title="Permalink to this heading">#</a></h1>
+<section id="executive-summary">
+<h2>Executive Summary<a class="headerlink" href="#executive-summary" title="Permalink to this heading">#</a></h2>
+<p>This report evaluates the automation of per-volume Kubernetes block Cinder storage in a Trusted Research Environment (TRE) environment using LUKS (Linux Unified Key setup), Kubernetes custom operator with Kopf. The proposed solution uses Kubernetes Operator using Python Kopf to manage LUKS-based encryption of OpenStack Cinder-backed block volumes.</p>
 <ul class="simple">
-<li><p>Kubernetes Operator using Python Kopf</p></li>
 <li><p>Watch for custom resources when submitted by the user or the system.</p></li>
 <li><p>Triggers the encryption of the volume based on the life cycle state.</p></li>
 <li><p>Enforces the encryption of the volume at the creation time.</p></li>
 </ul>
 <p>This approach demonstrates that per volume encryption can be policy-driven, enforced and automated rather than using manual operations.</p>
-</section>
 <section id="current-maturity">
 <h3>Current Maturity:<a class="headerlink" href="#current-maturity" title="Permalink to this heading">#</a></h3>
 <ul class="simple">
@@ -362,6 +357,8 @@ document.write(`
 </ul>
 </section>
 </section>
+<div class="toctree-wrapper compound">
+</div>
 </section>
 
     <script type="text/x-thebe-config">
@@ -394,17 +391,8 @@ document.write(`
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
-    <a class="left-prev"
-       href="intro.html"
-       title="previous page">
-      <i class="fa-solid fa-angle-left"></i>
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Automated Encryption of Kubernetes Block Storage for Trusted Research Environment</p>
-      </div>
-    </a>
     <a class="right-next"
-       href="background.html"
+       href="background_storage_risk.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
@@ -428,8 +416,7 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#purpose">Purpose:</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-finding-so-far">Key Finding so far:</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#executive-summary">Executive Summary</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#current-maturity">Current Maturity:</a></li>
 </ul>
 </li>
