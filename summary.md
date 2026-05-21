@@ -1,12 +1,8 @@
-# Executive Summary
+# Automated Encryption of Kubernetes Block Storage for Trusted Research Environment
 
-## Purpose:
+## Executive Summary
 
-This report evaluates the automation of per-volume Kubernetes block Cinder storage in a Trusted Research Environment (TRE) environment using LUKS (Linux Unified Key setup), Kubernetes custom operator with Kopf.
-
-### Key Finding so far:
-
-- Kubernetes Operator using Python Kopf
+This report evaluates the automation of per-volume Kubernetes block Cinder storage in a Trusted Research Environment (TRE) environment using LUKS (Linux Unified Key setup), Kubernetes custom operator with Kopf. The proposed solution uses Kubernetes Operator using Python Kopf to manage LUKS-based encryption of OpenStack Cinder-backed block volumes.
 
 - Watch for custom resources when submitted by the user or the system.
 

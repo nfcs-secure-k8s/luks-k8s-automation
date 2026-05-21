@@ -1,9 +1,19 @@
+# format: jb-book
+# root: intro
+# chapters:
+#   - file: summary
+#   - file: background
+#   - file: requirements
+#   - file: cloud_encryption
+#   - file: poc_luks
+#   - file: vault
+#   - file: oidc
+
 format: jb-book
-root: intro
+root: summary
 chapters:
-  - file: summary
-  - file: background
-  - file: requirements
+  - file: background_storage_risk
+  - file: stackholder_requirements
   - file: cloud_encryption
   - file: poc_luks
   - file: vault
