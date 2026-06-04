@@ -17,4 +17,5 @@ chapters:
   - file: cloud_encryption
   - file: poc_luks
   - file: vault
+  - file: csi_driver
   - file: oidc
