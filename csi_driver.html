@@ -1,0 +1,1314 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>CSI Driver Approach: Transparent LUKS Encryption via StorageClass &#8212; Secure K8s Storage</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" href="_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?digest=5a5c038af52cf7bc1a1ec88eea08e6366ee68824"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"
+const thebe_selector = ".thebe,.cell"
+const thebe_selector_input = "pre"
+const thebe_selector_output = ".output, .cell_output"
+</script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'csi_driver';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="OIDC Integration" href="oidc.html" />
+    <link rel="prev" title="Vault Integration" href="vault.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="intro.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">Secure K8s Storage</p>
+  
+</a></div>
+        <div class="sidebar-primary-item"><nav class="bd-links" id="bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="intro.html">
+                    Automated Encryption of Kubernetes Block Storage for Trusted Research Environment
+                </a>
+            </li>
+        </ul>
+        <ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cloud_encryption.html">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="poc_luks.html">Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault Integration</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">CSI Driver Approach: Transparent LUKS Encryption via StorageClass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><label class="sidebar-toggle primary-toggle btn btn-sm" for="__primary" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</label></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/csi_driver.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</label>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>CSI Driver Approach: Transparent LUKS Encryption via StorageClass</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture">Architecture</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-lifecycle">Volume Lifecycle</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-management">Key Management</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-prerequisites">Vault prerequisites</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#supported-backing-storage">Supported Backing Storage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#provisioning-a-volume">Provisioning a Volume</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparison-with-the-operator-approach">Comparison with the Operator Approach</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-limitations-of-the-operator-approach">Key limitations of the operator approach</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use-each-approach">When to use each approach</a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="csi-driver-approach-transparent-luks-encryption-via-storageclass">
+<h1>CSI Driver Approach: Transparent LUKS Encryption via StorageClass<a class="headerlink" href="#csi-driver-approach-transparent-luks-encryption-via-storageclass" title="Permalink to this heading">#</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h2>
+<p>The CSI driver implementation provides LUKS encryption as a standard Kubernetes
+<code class="docutils literal notranslate"><span class="pre">StorageClass</span></code>. A user creates a PVC with <code class="docutils literal notranslate"><span class="pre">storageClassName:</span> <span class="pre">luks-encrypted</span></code> and
+receives an encrypted, mounted filesystem — no custom resources, no helper pods, and
+no per-workload operator configuration required.</p>
+<p>This is the second implementation approach evaluated in this project. The first
+(Kopf operator + custom <code class="docutils literal notranslate"><span class="pre">EncryptedVolume</span></code> CRD) is described in the
+<a class="reference internal" href="poc_luks.html"><span class="doc std std-doc">Operator PoC</span></a> and <a class="reference internal" href="vault.html"><span class="doc std std-doc">Vault Integration</span></a> sections. The two
+approaches are compared at the end of this page.</p>
+</section>
+<hr class="docutils" />
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading">#</a></h2>
+<p>The driver is split into a <strong>Controller plugin</strong> (Deployment) and a <strong>Node plugin</strong>
+(DaemonSet). Each component is a Python gRPC server implementing the
+Container Storage Interface spec.</p>
+<pre  class="mermaid">
+        flowchart TB
+    subgraph cluster[&quot;Kubernetes Cluster&quot;]
+        subgraph userNS[&quot;User Namespace&quot;]
+            pod([&quot;User Pod&quot;])
+            upvc[&quot;User PVC&quot;]
+        end
+
+        subgraph ctrlPod[&quot;LUKS Controller Pod  ·  kube-system&quot;]
+            ep[&quot;external-provisioner&quot;]
+            ctrl[&quot;controller.py&quot;]
+            ctrlK8s[&quot;k8s.py&quot;]
+            ctrlVault[&quot;vault.py&quot;]
+            ep --&gt; ctrl --&gt; ctrlK8s &amp; ctrlVault
+        end
+
+        subgraph nodePod[&quot;LUKS Node DaemonSet  ·  per node&quot;]
+            registrar[&quot;node-driver-registrar&quot;]
+            nodeSvc[&quot;node.py&quot;]
+
+            subgraph devPy[&quot;device.py  ·  RESOLVERS registry&quot;]
+                direction TB
+                r1[&quot;1 · LocalResolver  ·  /dev/path from spec&quot;]
+                r2[&quot;2 · LonghornResolver  ·  /dev/longhorn/handle&quot;]
+                r3[&quot;3 · CephRBDResolver  ·  /dev/rbd/pool/image&quot;]
+                r4[&quot;4 · ByIdResolver  ·  scan /dev/disk/by-id/  fallback&quot;]
+                r1 --- r2 --- r3 --- r4
+            end
+
+            luksPy[&quot;luks.py&quot;]
+            nodeVault[&quot;vault.py&quot;]
+            nodeSvc --&gt; devPy &amp; luksPy &amp; nodeVault
+        end
+
+        kapi[(&quot;Kubernetes API&quot;)]
+        kubelet([&quot;kubelet&quot;])
+
+        subgraph backDrv[&quot;Backing CSI Driver&quot;]
+            backCtrl[&quot;Controller + external-attacher&quot;]
+            backNode[&quot;Node Plugin&quot;]
+            backCtrl --&gt; backNode
+        end
+
+        storage[(&quot;Backing Storage  ·  Longhorn · Ceph · Cinder · EBS · local-path&quot;)]
+    end
+
+    vault[(&quot;HashiCorp Vault  ·  KV v2&quot;)]
+
+    pod --&gt; upvc
+    upvc -- &quot;unbound PVC&quot; --&gt; ep
+    ctrlK8s &lt;-- &quot;PVC · PV · Events&quot; --&gt; kapi
+    ctrlVault &lt;-- &quot;ensure / read / delete key&quot; --&gt; vault
+
+    registrar -. &quot;register CSI socket&quot; .-&gt; kubelet
+    kubelet -- &quot;NodeStageVolume etc.&quot; --&gt; nodeSvc
+    devPy -- &quot;create / delete VolumeAttachment&quot; --&gt; kapi
+    kapi -- &quot;external-attacher watches&quot; --&gt; backCtrl
+    backNode --&gt; storage
+    nodeVault &lt;-- &quot;read key · rotate&quot; --&gt; vault
+    </pre><p><strong>Controller plugin</strong> runs as a single Deployment alongside the
+<code class="docutils literal notranslate"><span class="pre">external-provisioner</span></code> sidecar. When a PVC is created it calls <code class="docutils literal notranslate"><span class="pre">CreateVolume</span></code>,
+which creates a backing PVC against the configured <code class="docutils literal notranslate"><span class="pre">backingStorageClass</span></code>, then
+auto-generates a LUKS key in Vault (idempotent — no-op if the key already exists).</p>
+<p><strong>Node plugin</strong> runs as a DaemonSet on every node. kubelet calls it at mount time
+(<code class="docutils literal notranslate"><span class="pre">NodeStageVolume</span></code>) to attach the backing block device, fetch the LUKS key from
+Vault, format and open the LUKS device, and mount it to a staging path. kubelet
+then bind-mounts that staging path into the pod. On teardown, the node plugin
+closes the LUKS device and triggers the backing driver to detach the block device.</p>
+</section>
+<hr class="docutils" />
+<section id="volume-lifecycle">
+<h2>Volume Lifecycle<a class="headerlink" href="#volume-lifecycle" title="Permalink to this heading">#</a></h2>
+<pre  class="mermaid">
+        sequenceDiagram
+    autonumber
+    actor User
+    participant K8s as Kubernetes API
+    participant EP as external-provisioner
+    participant Ctrl as controller.py
+    participant Vault as HashiCorp Vault
+    participant kbl as kubelet
+    participant Node as node.py
+    participant Dev as device.py
+    participant BDrv as Backing CSI Driver
+    participant LUKS as luks.py
+
+    rect rgb(225, 240, 255)
+        Note over User,Vault: Phase 1 — Volume Provisioning
+
+        User-&gt;&gt;K8s: create PVC with luks-encrypted StorageClass
+        K8s-&gt;&gt;EP: unbound PVC event
+        EP-&gt;&gt;Ctrl: CreateVolume(name, params)
+        Ctrl-&gt;&gt;K8s: create backing PVC using backingStorageClass
+        K8s--&gt;&gt;Ctrl: PVC Bound, pv_name returned
+        Ctrl-&gt;&gt;Vault: ensure_secret(institution, volume_name)
+        Note right of Vault: Idempotent — skips if key already exists
+        Vault--&gt;&gt;Ctrl: key version
+        Ctrl--&gt;&gt;EP: Volume with volume_context backingPvName, vaultPath, luksType
+        EP-&gt;&gt;K8s: create PV, bind to User PVC
+        K8s--&gt;&gt;User: PVC Bound
+    end
+
+    rect rgb(255, 243, 224)
+        Note over kbl,LUKS: Phase 2 — Volume Staging
+
+        kbl-&gt;&gt;Node: NodeStageVolume(volume_id, staging_path, volume_context)
+        Node-&gt;&gt;Dev: attach_and_resolve(volume_id, pv_name, node_name)
+
+        Dev-&gt;&gt;K8s: create VolumeAttachment(attacher, nodeName, pvName)
+        K8s-&gt;&gt;BDrv: external-attacher sees new VolumeAttachment
+        BDrv-&gt;&gt;BDrv: ControllerPublishVolume
+        BDrv--&gt;&gt;K8s: VolumeAttachment.status.attached = true
+        K8s--&gt;&gt;Dev: attached
+
+        Note over Dev: Try RESOLVERS in order until a path is returned
+        Dev-&gt;&gt;Dev: resolve_device_path(pv) via RESOLVERS registry
+
+        loop wait_for_device — polls every 3s, up to 120s
+            Dev-&gt;&gt;Dev: os.path.exists(device_path)?
+        end
+
+        Dev--&gt;&gt;Node: block device path
+
+        Node-&gt;&gt;Vault: read_secret(institution, volume_name)
+        Vault--&gt;&gt;Node: LUKS key + current version
+
+        alt First use — device not yet LUKS-formatted
+            Node-&gt;&gt;LUKS: luks_format(device, key, luks_type)
+            Node-&gt;&gt;LUKS: luks_open(device, mapper, key)
+            Node-&gt;&gt;LUKS: make_filesystem(mapper, filesystem)
+        else Device already LUKS-formatted
+            Node-&gt;&gt;LUKS: luks_open(device, mapper, current_key)
+            opt Vault version advanced — key rotation required
+                Node-&gt;&gt;Vault: read_secret(institution, volume_name, version=prev)
+                Vault--&gt;&gt;Node: previous key
+                Node-&gt;&gt;LUKS: luks_add_key(device, new_key, old_key)
+                Node-&gt;&gt;LUKS: luks_remove_key(device, old_key)
+                Node-&gt;&gt;LUKS: luks_open(device, mapper, new_key)
+            end
+        end
+
+        Node-&gt;&gt;Node: mount /dev/mapper/luks-name to staging_path
+        Node--&gt;&gt;kbl: NodeStageVolumeResponse
+    end
+
+    rect rgb(232, 245, 233)
+        Note over kbl,Node: Phase 3 — Volume Publish
+
+        kbl-&gt;&gt;Node: NodePublishVolume(staging_path, target_path, readonly)
+        Node-&gt;&gt;Node: bind-mount staging_path to pod target_path
+        Node--&gt;&gt;kbl: NodePublishVolumeResponse
+        kbl--&gt;&gt;User: Pod running, volume mounted
+    end
+
+    rect rgb(252, 228, 236)
+        Note over kbl,BDrv: Phase 4 — Teardown
+
+        kbl-&gt;&gt;Node: NodeUnpublishVolume(target_path)
+        Node-&gt;&gt;Node: umount target_path
+        Node--&gt;&gt;kbl: NodeUnpublishVolumeResponse
+
+        kbl-&gt;&gt;Node: NodeUnstageVolume(volume_id, staging_path)
+        Node-&gt;&gt;Node: umount staging_path, lazy fallback if busy
+        Node-&gt;&gt;LUKS: luks_close_robust(mapper)
+        Node-&gt;&gt;Dev: release_attachment(volume_id, node_name)
+        Dev-&gt;&gt;K8s: delete VolumeAttachment
+        K8s-&gt;&gt;BDrv: external-attacher sees deletion
+        BDrv-&gt;&gt;BDrv: ControllerUnpublishVolume, block device detached
+        Node--&gt;&gt;kbl: NodeUnstageVolumeResponse
+    end
+    </pre></section>
+<hr class="docutils" />
+<section id="key-management">
+<h2>Key Management<a class="headerlink" href="#key-management" title="Permalink to this heading">#</a></h2>
+<p>LUKS keys are stored in HashiCorp Vault at:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">secret</span><span class="o">/</span><span class="n">tenants</span><span class="o">/&lt;</span><span class="n">institution</span><span class="o">&gt;/</span><span class="n">luks</span><span class="o">-</span><span class="n">keys</span><span class="o">/&lt;</span><span class="n">volume</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This path is shared with the operator implementation so that both approaches can
+coexist against the same Vault instance.</p>
+<p><strong>Key generation</strong> is automatic and happens at <code class="docutils literal notranslate"><span class="pre">CreateVolume</span></code> time in the
+controller. The call is idempotent — if a key already exists for that volume name
+it is reused. Users do not create or manage key material directly.</p>
+<p><strong>Key fetch at mount time</strong> is done by the node plugin, which authenticates to
+Vault using the pod’s Kubernetes service account JWT (<code class="docutils literal notranslate"><span class="pre">luks-csi-node</span></code> service
+account). No Vault Agent sidecar is required.</p>
+<p><strong>Key rotation</strong> is triggered by advancing the KV v2 version in Vault. A background
+sync thread in the node plugin checks for version changes every 30 seconds and
+annotates the PV. On the next <code class="docutils literal notranslate"><span class="pre">NodeStageVolume</span></code> call the driver detects a version
+mismatch and performs an inline rekey: <code class="docutils literal notranslate"><span class="pre">luksAddKey</span></code> with the new key, then
+<code class="docutils literal notranslate"><span class="pre">luksRemoveKey</span></code> to remove the old one.</p>
+<section id="vault-prerequisites">
+<h3>Vault prerequisites<a class="headerlink" href="#vault-prerequisites" title="Permalink to this heading">#</a></h3>
+<p>The CSI driver uses <strong>two</strong> Kubernetes service accounts:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">luks-csi-controller</span></code> — used by the controller pod to generate and delete keys</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">luks-csi-node</span></code> — used by the node DaemonSet to read keys at mount time</p></li>
+</ul>
+<p>Both must be included in the Vault Kubernetes auth role:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>vault<span class="w"> </span>write<span class="w"> </span>auth/kubernetes/role/luks-operator-role<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">bound_service_account_names</span><span class="o">=</span><span class="s2">&quot;luks-csi-controller,luks-csi-node&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">bound_service_account_namespaces</span><span class="o">=</span><span class="s2">&quot;kube-system&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">policies</span><span class="o">=</span><span class="s2">&quot;luks-policy&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">ttl</span><span class="o">=</span><span class="s2">&quot;24h&quot;</span>
+</pre></div>
+</div>
+<p>The Vault policy is identical to the operator’s:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>vault<span class="w"> </span>policy<span class="w"> </span>write<span class="w"> </span>luks-policy<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+<span class="s">path &quot;secret/data/tenants/*&quot; {</span>
+<span class="s">  capabilities = [&quot;create&quot;, &quot;read&quot;, &quot;update&quot;, &quot;delete&quot;, &quot;list&quot;]</span>
+<span class="s">}</span>
+<span class="s">path &quot;secret/metadata/tenants/*&quot; {</span>
+<span class="s">  capabilities = [&quot;read&quot;, &quot;list&quot;, &quot;delete&quot;]</span>
+<span class="s">}</span>
+<span class="s">EOF</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="supported-backing-storage">
+<h2>Supported Backing Storage<a class="headerlink" href="#supported-backing-storage" title="Permalink to this heading">#</a></h2>
+<p>The driver wraps any block-mode <code class="docutils literal notranslate"><span class="pre">StorageClass</span></code>. At <code class="docutils literal notranslate"><span class="pre">NodeStageVolume</span></code> time it creates
+a <code class="docutils literal notranslate"><span class="pre">VolumeAttachment</span></code> to trigger the backing driver’s attach flow, then resolves the
+on-node device path via an ordered RESOLVERS registry:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Resolver</p></th>
+<th class="head"><p>Backing driver</p></th>
+<th class="head"><p>Device path</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LocalResolver</span></code></p></td>
+<td><p>local / hostPath static PVs</p></td>
+<td><p>path from PV spec</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LonghornResolver</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">driver.longhorn.io</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/dev/longhorn/&lt;volumeHandle&gt;</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CephRBDResolver</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rbd.csi.ceph.com</span></code> / rook-ceph</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/dev/rbd/&lt;pool&gt;/&lt;imageName&gt;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ByIdResolver</span></code> <em>(fallback)</em></p></td>
+<td><p>Cinder, EBS, GCE PD, Azure Disk</p></td>
+<td><p>scan <code class="docutils literal notranslate"><span class="pre">/dev/disk/by-id/</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">local</span></code> and <code class="docutils literal notranslate"><span class="pre">hostPath</span></code> PVs skip the VolumeAttachment step entirely.</p>
+</section>
+<hr class="docutils" />
+<section id="provisioning-a-volume">
+<h2>Provisioning a Volume<a class="headerlink" href="#provisioning-a-volume" title="Permalink to this heading">#</a></h2>
+<p>No key Secret is needed. Create a PVC and the controller handles everything:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PersistentVolumeClaim</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-encrypted-pvc</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">luks-encrypted</span>
+<span class="w">  </span><span class="nt">accessModes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">ReadWriteOnce</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10Gi</span>
+</pre></div>
+</div>
+<p>Confirm the Vault key was auto-provisioned:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>describe<span class="w"> </span>pvc<span class="w"> </span>my-encrypted-pvc
+<span class="c1"># Normal  LuksKeyProvisioned  ...  LUKS key auto-generated in Vault at</span>
+<span class="c1">#   &quot;secret/tenants/default/luks-keys/&lt;volume-id&gt;&quot; (v1)</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="comparison-with-the-operator-approach">
+<h2>Comparison with the Operator Approach<a class="headerlink" href="#comparison-with-the-operator-approach" title="Permalink to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Aspect</p></th>
+<th class="head"><p>Kopf Operator</p></th>
+<th class="head"><p>CSI Driver</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>User interface</strong></p></td>
+<td><p>Custom Resource (<code class="docutils literal notranslate"><span class="pre">EncryptedVolume</span></code>)</p></td>
+<td><p>Standard PVC (<code class="docutils literal notranslate"><span class="pre">storageClassName:</span> <span class="pre">luks-encrypted</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Key generation</strong></p></td>
+<td><p>Auto-generated in Vault at CR creation</p></td>
+<td><p>Auto-generated in Vault at <code class="docutils literal notranslate"><span class="pre">CreateVolume</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Key fetch at mount</strong></p></td>
+<td><p>Vault Agent sidecar injects key via annotations</p></td>
+<td><p>Node plugin fetches directly using service account JWT</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Key rotation trigger</strong></p></td>
+<td><p>30s timer detects Vault version bump, patches annotation</p></td>
+<td><p>30s sync thread annotates PV; rotation applied in <code class="docutils literal notranslate"><span class="pre">NodeStageVolume</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>AppArmor deployment</strong></p></td>
+<td><p>SSH script run manually on each worker node</p></td>
+<td><p>Loader DaemonSet — automatic, no SSH required</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Device path resolution</strong></p></td>
+<td><p>Hard-coded <code class="docutils literal notranslate"><span class="pre">/dev/vdc</span></code> in init container script</p></td>
+<td><p>RESOLVERS registry resolves path at runtime for any backing driver</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Privileged pods</strong></p></td>
+<td><p>Every user workload pod requires <code class="docutils literal notranslate"><span class="pre">privileged:</span> <span class="pre">true</span></code></p></td>
+<td><p>Only the node DaemonSet is privileged; user pods are unprivileged</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Unmount lifecycle</strong></p></td>
+<td><p>No delete handler; LUKS device left open on pod exit</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NodeUnstageVolume</span></code> closes the LUKS device cleanly</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Backend portability</strong></p></td>
+<td><p>Tied to OpenStack Cinder</p></td>
+<td><p>Works with any block StorageClass</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Kubernetes integration</strong></p></td>
+<td><p>Operator process must be running for volumes to work</p></td>
+<td><p>Standard CSI; volumes work independently of the operator process</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="key-limitations-of-the-operator-approach">
+<h3>Key limitations of the operator approach<a class="headerlink" href="#key-limitations-of-the-operator-approach" title="Permalink to this heading">#</a></h3>
+<p>The operator approach was the initial feasibility PoC and has several limitations
+that motivated the CSI driver:</p>
+<ol class="arabic simple">
+<li><p><strong>Hard-coded device path</strong> — <code class="docutils literal notranslate"><span class="pre">/dev/vdc</span></code> is assumed by the init container. Different
+clouds assign different device names, causing silent failures on non-Cinder storage.</p></li>
+<li><p><strong>Privileged workload pods</strong> — Every pod using an encrypted volume must run with
+<code class="docutils literal notranslate"><span class="pre">privileged:</span> <span class="pre">true</span></code>, which is typically blocked by Pod Security Admission in
+production clusters.</p></li>
+<li><p><strong>No unmount lifecycle</strong> — There is no delete handler. When a pod or CR is deleted,
+the LUKS mapper stays open on the node until manually closed or the node reboots.</p></li>
+<li><p><strong>Encryption runs inside the user container</strong> — <code class="docutils literal notranslate"><span class="pre">cryptsetup</span></code> is installed via <code class="docutils literal notranslate"><span class="pre">apk</span></code>
+inside an init container on every pod startup, which is slow and requires internet
+access from within the pod.</p></li>
+</ol>
+</section>
+<section id="when-to-use-each-approach">
+<h3>When to use each approach<a class="headerlink" href="#when-to-use-each-approach" title="Permalink to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Scenario</p></th>
+<th class="head"><p>Recommendation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Production cluster with a standard block StorageClass</p></td>
+<td><p><strong>CSI driver</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>Cluster where CSI sidecars are unavailable</p></td>
+<td><p>Operator</p></td>
+</tr>
+<tr class="row-even"><td><p>Quick PoC on a known single-device-path environment</p></td>
+<td><p>Operator is simpler to deploy</p></td>
+</tr>
+<tr class="row-odd"><td><p>Need unprivileged user workload pods</p></td>
+<td><p><strong>CSI driver</strong></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="vault.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Vault Integration</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="oidc.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">OIDC Integration</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture">Architecture</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-lifecycle">Volume Lifecycle</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-management">Key Management</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-prerequisites">Vault prerequisites</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#supported-backing-storage">Supported Backing Storage</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#provisioning-a-volume">Provisioning a Volume</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparison-with-the-operator-approach">Comparison with the Operator Approach</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-limitations-of-the-operator-approach">Key limitations of the operator approach</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use-each-approach">When to use each approach</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By NFCS Storage Encryption Project
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2022.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
