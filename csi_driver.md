@@ -1,4 +1,6 @@
-# CSI Driver Approach: Transparent LUKS Encryption via StorageClass
+# Part B: CSI Driver Approach
+
+## CSI Driver Approach: Transparent LUKS Encryption via StorageClass
 
 ## Overview
 
@@ -261,12 +263,12 @@ The driver wraps any block-mode `StorageClass`. At `NodeStageVolume` time it cre
 a `VolumeAttachment` to trigger the backing driver's attach flow, then resolves the
 on-node device path via an ordered RESOLVERS registry:
 
-| Resolver | Backing driver | Device path |
-|---|---|---|
-| `LocalResolver` | local / hostPath static PVs | path from PV spec |
-| `LonghornResolver` | `driver.longhorn.io` | `/dev/longhorn/<volumeHandle>` |
-| `CephRBDResolver` | `rbd.csi.ceph.com` / rook-ceph | `/dev/rbd/<pool>/<imageName>` |
-| `ByIdResolver` *(fallback)* | Cinder, EBS, GCE PD, Azure Disk | scan `/dev/disk/by-id/` |
+| Resolver                    | Backing driver                  | Device path                    |
+| --------------------------- | ------------------------------- | ------------------------------ |
+| `LocalResolver`             | local / hostPath static PVs     | path from PV spec              |
+| `LonghornResolver`          | `driver.longhorn.io`            | `/dev/longhorn/<volumeHandle>` |
+| `CephRBDResolver`           | `rbd.csi.ceph.com` / rook-ceph  | `/dev/rbd/<pool>/<imageName>`  |
+| `ByIdResolver` _(fallback)_ | Cinder, EBS, GCE PD, Azure Disk | scan `/dev/disk/by-id/`        |
 
 `local` and `hostPath` PVs skip the VolumeAttachment step entirely.
 
@@ -301,18 +303,18 @@ kubectl describe pvc my-encrypted-pvc
 
 ## Comparison with the Operator Approach
 
-| Aspect | Kopf Operator | CSI Driver |
-|---|---|---|
-| **User interface** | Custom Resource (`EncryptedVolume`) | Standard PVC (`storageClassName: luks-encrypted`) |
-| **Key generation** | Auto-generated in Vault at CR creation | Auto-generated in Vault at `CreateVolume` |
-| **Key fetch at mount** | Vault Agent sidecar injects key via annotations | Node plugin fetches directly using service account JWT |
-| **Key rotation trigger** | 30s timer detects Vault version bump, patches annotation | 30s sync thread annotates PV; rotation applied in `NodeStageVolume` |
-| **AppArmor deployment** | SSH script run manually on each worker node | Loader DaemonSet — automatic, no SSH required |
-| **Device path resolution** | Hard-coded `/dev/vdc` in init container script | RESOLVERS registry resolves path at runtime for any backing driver |
-| **Privileged pods** | Every user workload pod requires `privileged: true` | Only the node DaemonSet is privileged; user pods are unprivileged |
-| **Unmount lifecycle** | No delete handler; LUKS device left open on pod exit | `NodeUnstageVolume` closes the LUKS device cleanly |
-| **Backend portability** | Tied to OpenStack Cinder | Works with any block StorageClass |
-| **Kubernetes integration** | Operator process must be running for volumes to work | Standard CSI; volumes work independently of the operator process |
+| Aspect                     | Kopf Operator                                            | CSI Driver                                                          |
+| -------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
+| **User interface**         | Custom Resource (`EncryptedVolume`)                      | Standard PVC (`storageClassName: luks-encrypted`)                   |
+| **Key generation**         | Auto-generated in Vault at CR creation                   | Auto-generated in Vault at `CreateVolume`                           |
+| **Key fetch at mount**     | Vault Agent sidecar injects key via annotations          | Node plugin fetches directly using service account JWT              |
+| **Key rotation trigger**   | 30s timer detects Vault version bump, patches annotation | 30s sync thread annotates PV; rotation applied in `NodeStageVolume` |
+| **AppArmor deployment**    | SSH script run manually on each worker node              | Loader DaemonSet — automatic, no SSH required                       |
+| **Device path resolution** | Hard-coded `/dev/vdc` in init container script           | RESOLVERS registry resolves path at runtime for any backing driver  |
+| **Privileged pods**        | Every user workload pod requires `privileged: true`      | Only the node DaemonSet is privileged; user pods are unprivileged   |
+| **Unmount lifecycle**      | No delete handler; LUKS device left open on pod exit     | `NodeUnstageVolume` closes the LUKS device cleanly                  |
+| **Backend portability**    | Tied to OpenStack Cinder                                 | Works with any block StorageClass                                   |
+| **Kubernetes integration** | Operator process must be running for volumes to work     | Standard CSI; volumes work independently of the operator process    |
 
 ### Key limitations of the operator approach
 
@@ -335,9 +337,9 @@ that motivated the CSI driver:
 
 ### When to use each approach
 
-| Scenario | Recommendation |
-|---|---|
-| Production cluster with a standard block StorageClass | **CSI driver** |
-| Cluster where CSI sidecars are unavailable | Operator |
-| Quick PoC on a known single-device-path environment | Operator is simpler to deploy |
-| Need unprivileged user workload pods | **CSI driver** |
+| Scenario                                              | Recommendation                |
+| ----------------------------------------------------- | ----------------------------- |
+| Production cluster with a standard block StorageClass | **CSI driver**                |
+| Cluster where CSI sidecars are unavailable            | Operator                      |
+| Quick PoC on a known single-device-path environment   | Operator is simpler to deploy |
+| Need unprivileged user workload pods                  | **CSI driver**                |
