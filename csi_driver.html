@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>CSI Driver Approach: Transparent LUKS Encryption via StorageClass &#8212; Secure K8s Storage</title>
+    <title>Part B: CSI Driver Approach &#8212; Secure K8s Storage</title>
   
   
   
@@ -501,8 +501,7 @@ window.runMermaid = runMermaid;</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'csi_driver';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="OIDC Integration" href="oidc.html" />
-    <link rel="prev" title="Vault Integration" href="vault.html" />
+    <link rel="prev" title="OIDC Integration" href="oidc.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -607,10 +606,10 @@ window.runMermaid = runMermaid;</script>
 <li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cloud_encryption.html">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="poc_luks.html">Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="poc_luks.html">Part A: Kubernetes Operator-Based Approach</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vault.html">Vault Integration</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">CSI Driver Approach: Transparent LUKS Encryption via StorageClass</a></li>
 <li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Part B: CSI Driver Approach</a></li>
 </ul>
 
     </div>
@@ -749,7 +748,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>CSI Driver Approach: Transparent LUKS Encryption via StorageClass</h1>
+    <h1>Part B: CSI Driver Approach</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -759,6 +758,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#csi-driver-approach-transparent-luks-encryption-via-storageclass">CSI Driver Approach: Transparent LUKS Encryption via StorageClass</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture">Architecture</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-lifecycle">Volume Lifecycle</a></li>
@@ -784,8 +784,11 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="csi-driver-approach-transparent-luks-encryption-via-storageclass">
-<h1>CSI Driver Approach: Transparent LUKS Encryption via StorageClass<a class="headerlink" href="#csi-driver-approach-transparent-luks-encryption-via-storageclass" title="Permalink to this heading">#</a></h1>
+  <section id="part-b-csi-driver-approach">
+<h1>Part B: CSI Driver Approach<a class="headerlink" href="#part-b-csi-driver-approach" title="Permalink to this heading">#</a></h1>
+<section id="csi-driver-approach-transparent-luks-encryption-via-storageclass">
+<h2>CSI Driver Approach: Transparent LUKS Encryption via StorageClass<a class="headerlink" href="#csi-driver-approach-transparent-luks-encryption-via-storageclass" title="Permalink to this heading">#</a></h2>
+</section>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">#</a></h2>
 <p>The CSI driver implementation provides LUKS encryption as a standard Kubernetes
@@ -1210,22 +1213,13 @@ access from within the pod.</p></li>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="vault.html"
+       href="oidc.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Vault Integration</p>
-      </div>
-    </a>
-    <a class="right-next"
-       href="oidc.html"
-       title="next page">
-      <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">OIDC Integration</p>
       </div>
-      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
                 </footer>
@@ -1243,6 +1237,7 @@ access from within the pod.</p></li>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#csi-driver-approach-transparent-luks-encryption-via-storageclass">CSI Driver Approach: Transparent LUKS Encryption via StorageClass</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">Overview</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture">Architecture</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-lifecycle">Volume Lifecycle</a></li>

@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Kubernetes Operator driven LUKS encryption using Kubernetes Secrets &#8212; Secure K8s Storage</title>
+    <title>Part A: Kubernetes Operator-Based Approach &#8212; Secure K8s Storage</title>
   
   
   
@@ -607,10 +607,10 @@ window.runMermaid = runMermaid;</script>
 <li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
 <li class="toctree-l1"><a class="reference internal" href="cloud_encryption.html">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Part A: Kubernetes Operator-Based Approach</a></li>
 <li class="toctree-l1"><a class="reference internal" href="vault.html">Vault Integration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="csi_driver.html">CSI Driver Approach: Transparent LUKS Encryption via StorageClass</a></li>
 <li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="csi_driver.html">Part B: CSI Driver Approach</a></li>
 </ul>
 
     </div>
@@ -749,7 +749,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</h1>
+    <h1>Part A: Kubernetes Operator-Based Approach</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -759,6 +759,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets">Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#purpose-and-scope">Purpose and Scope</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-and-objectives-of-the-poc">Scope and Objectives of the PoC</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture-overview">Architecture Overview</a></li>
@@ -776,9 +777,11 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <p>~~# Implemented Proof-of-Concept: Kubernetes Operator driven LUKS encryption~~</p>
+  <section id="part-a-kubernetes-operator-based-approach">
+<h1>Part A: Kubernetes Operator-Based Approach<a class="headerlink" href="#part-a-kubernetes-operator-based-approach" title="Permalink to this heading">#</a></h1>
 <section id="kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets">
-<h1>Kubernetes Operator driven LUKS encryption using Kubernetes Secrets<a class="headerlink" href="#kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets" title="Permalink to this heading">#</a></h1>
+<h2>Kubernetes Operator driven LUKS encryption using Kubernetes Secrets<a class="headerlink" href="#kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets" title="Permalink to this heading">#</a></h2>
+</section>
 <section id="purpose-and-scope">
 <h2>Purpose and Scope<a class="headerlink" href="#purpose-and-scope" title="Permalink to this heading">#</a></h2>
 <p>This section describes the evaluation and implementation of automating Cinder block volume encryption attached to a Kubernetes workload at volume creation time driven by declarative intent expressed using Custom Resource.</p>
@@ -971,6 +974,7 @@ This process is fully automated and does not require manual intervention.</p></l
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets">Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#purpose-and-scope">Purpose and Scope</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-and-objectives-of-the-poc">Scope and Objectives of the PoC</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture-overview">Architecture Overview</a></li>
