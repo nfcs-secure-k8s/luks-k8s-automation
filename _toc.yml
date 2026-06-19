@@ -24,7 +24,6 @@ format: jb-book
 root: intro
 chapters:
   - file: stackholder_requirements
-  - file: cloud_encryption
   - file: native_openstack.md
   - file: poc_luks
   - file: vault
