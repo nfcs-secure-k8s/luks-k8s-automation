@@ -501,8 +501,8 @@ window.runMermaid = runMermaid;</script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'poc_luks';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Vault Integration" href="vault.html" />
-    <link rel="prev" title="Native Cloud Provider Encryption (OpenStack Cinder)" href="cloud_encryption.html" />
+    <link rel="next" title="Vault integration for institution-managed key management" href="vault.html" />
+    <link rel="prev" title="Native Cloud Provider Encryption Using OpenStack Cinder" href="native_openstack.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -604,12 +604,11 @@ window.runMermaid = runMermaid;</script>
             </li>
         </ul>
         <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cloud_encryption.html">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native_openstack.html">Native Cloud Provider Encryption Using OpenStack Cinder</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Part A: Kubernetes Operator-Based Approach</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault Integration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault integration for institution-managed key management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration for Federated Access Control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="csi_driver.html">Part B: CSI Driver Approach</a></li>
 </ul>
 
@@ -759,13 +758,12 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets">Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#purpose-and-scope">Purpose and Scope</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-and-objectives-of-the-poc">Scope and Objectives of the PoC</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#proposed-kubernetes-operator-based-approach">Proposed Kubernetes Operator-Based Approach</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#proof-of-concept-luks-encryption-using-kubernetes-secrets">Proof of Concept: LUKS Encryption Using Kubernetes Secrets</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture-overview">Architecture Overview</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operator-activities-and-control-flow">Operator Activities and Control Flow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operator-control-flow">Operator Control Flow</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validation-and-results">Validation and Results</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#current-limitations">Current Limitations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#current-limitations-of-the-proof-of-concept">Current Limitations of the Proof of Concept</a></li>
 </ul>
             </nav>
         </div>
@@ -779,71 +777,114 @@ document.write(`
                   
   <section id="part-a-kubernetes-operator-based-approach">
 <h1>Part A: Kubernetes Operator-Based Approach<a class="headerlink" href="#part-a-kubernetes-operator-based-approach" title="Permalink to this heading">#</a></h1>
-<section id="kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets">
-<h2>Kubernetes Operator driven LUKS encryption using Kubernetes Secrets<a class="headerlink" href="#kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets" title="Permalink to this heading">#</a></h2>
+<section id="proposed-kubernetes-operator-based-approach">
+<h2>Proposed Kubernetes Operator-Based Approach<a class="headerlink" href="#proposed-kubernetes-operator-based-approach" title="Permalink to this heading">#</a></h2>
+<p>To deal with the limitations of infrastructure-level encryption, this project explores a Kubernetes-native approach using a custom Operator built with Kopf. The operator automates LUKS encryption for Cinder-backed block volumes and allows encryption intent to be declared through a Kubernetes custom resource.
+The purpose of this approach is not to replace all cloud-provider encryption controls, but to provide additional control at the workload and tenant level. By moving the enforcement logic into Kubernetes, encryption can be aligned more closely with namespaces, research projects, institutional ownership, and platform policy.</p>
+<p>This approach provides several benefits:</p>
+<ul class="simple">
+<li><p>Encryption can be enforced declaratively.</p></li>
+<li><p>Per-volume encryption can be automated.</p></li>
+<li><p>The platform can apply encryption consistently at creation time.</p></li>
+<li><p>Encryption status can be reported through Kubernetes.</p></li>
+<li><p>Key ownership can later be delegated to an external key management system such as HashiCorp Vault.</p></li>
+<li><p>Institutions can manage their own keys independently of the infrastructure provider.</p></li>
+</ul>
 </section>
-<section id="purpose-and-scope">
-<h2>Purpose and Scope<a class="headerlink" href="#purpose-and-scope" title="Permalink to this heading">#</a></h2>
-<p>This section describes the evaluation and implementation of automating Cinder block volume encryption attached to a Kubernetes workload at volume creation time driven by declarative intent expressed using Custom Resource.</p>
-</section>
-<section id="scope-and-objectives-of-the-poc">
-<h2>Scope and Objectives of the PoC<a class="headerlink" href="#scope-and-objectives-of-the-poc" title="Permalink to this heading">#</a></h2>
-<p>The main objectives of this PoC is to:</p>
+<section id="proof-of-concept-luks-encryption-using-kubernetes-secrets">
+<h2>Proof of Concept: LUKS Encryption Using Kubernetes Secrets<a class="headerlink" href="#proof-of-concept-luks-encryption-using-kubernetes-secrets" title="Permalink to this heading">#</a></h2>
+<p>The preliminary proof of concept validates whether a Kubernetes Operator can automate the encryption of Cinder-backed block storage using LUKS.
+The scope of the proof of concept is limited to feasibility and functional correctness. It does not yet aim to provide production-level lifecycle management, performance optimisation, or full failure recovery.</p>
+<p>The proof of concept has four main objectives:</p>
 <ol class="arabic simple">
-<li><p>Validate automation of Kubernetes to enforce block-level encryption without manual intervention.</p></li>
-<li><p>Tests using a custom resource and operator are suitable for expressing encryption intent in a Trusted Research Environment (TRE).</p></li>
-<li><p>Show that LUKS can be used programmatically to dynamically provision encrypted volumes.</p></li>
-<li><p>Demonstrate later the integration of an external key management system, e.g., Vault.</p></li>
+<li><p>Validate that Kubernetes can enforce block-level encryption without manual intervention.</p></li>
+<li><p>Demonstrate that a custom resource can express encryption intent.</p></li>
+<li><p>Show that LUKS can be used programmatically to encrypt dynamically provisioned block volumes.</p></li>
+<li><p>Provide a foundation for future integration with HashiCorp Vault.</p></li>
 </ol>
-<p>The PoC scope is limited to functional correctness and feasibility rather than production-level attainment and performance optimization of full lifecycle management.</p>
 </section>
 <section id="architecture-overview">
 <h2>Architecture Overview<a class="headerlink" href="#architecture-overview" title="Permalink to this heading">#</a></h2>
-<p>The PoC consists of the following components:</p>
-<ul class="simple">
-<li><p>Kubernetes Operator: A custom Kubernetes operator using the Python-based Kopf framework to watch for lifecycle events, e.g., creating a volume, and then enforces encryption on the volume.</p></li>
-<li><p>Kubernetes Custom Resource: Declares the requirements for an encrypted volume and shows the user or platform intent that storage needs to be encrypted.</p></li>
-<li><p>Containerized Operator Deployment: The operator is packaged as a Docker image using Python 3.9 or newer and deployed onto a cluster as a Kubernetes deployment with appropriate RBAC permissions and Kubernetes secrets.</p></li>
-<li><p>LUKS: The operator uses standard Linux tooling such as LUKS to encrypt the block storage.</p></li>
-<li><p>Block storage: OpenStack Cinder block storage is used as a backend and attached to Kubernetes pods via an existing CSI driver.</p></li>
-</ul>
+<p>The proof of concept consists of the following components:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head text-center"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Kubernetes Operator</p></td>
+<td class="text-center"><p>Watches custom resources and enforces encryption lifecycle actions.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Kopf Framework</p></td>
+<td class="text-center"><p>Provides the Python-based operator control loop</p></td>
+</tr>
+<tr class="row-even"><td><p>Custom Resource</p></td>
+<td class="text-center"><p>Declares the user or platform intent for encrypted storage.</p></td>
+</tr>
+<tr class="row-odd"><td><p>LUKS / cryptsetup</p></td>
+<td class="text-center"><p>Performs block-level encryption on the device.</p></td>
+</tr>
+<tr class="row-even"><td><p>Kubernetes Secrets</p></td>
+<td class="text-center"><p>Stores the initial proof-of-concept encryption passphrase.</p></td>
+</tr>
+<tr class="row-odd"><td><p>OpenStack Cinder</p></td>
+<td class="text-center"><p>Provides the backend block storage.</p></td>
+</tr>
+<tr class="row-even"><td><p>CSI Driver</p></td>
+<td class="text-center"><p>Attaches Cinder volumes to Kubernetes workloads.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
-<section id="operator-activities-and-control-flow">
-<h2>Operator Activities and Control Flow<a class="headerlink" href="#operator-activities-and-control-flow" title="Permalink to this heading">#</a></h2>
-<p>When a user or platform creates and submits a custom resource, this creates an encrypted volume resource. The operator performs the following high-level activities:</p>
+<section id="operator-control-flow">
+<h2>Operator Control Flow<a class="headerlink" href="#operator-control-flow" title="Permalink to this heading">#</a></h2>
+<p>When a user or platform creates an encrypted volume custom resource, the operator begins a reconciliation process.</p>
+<p>First, the operator detects the creation event through Kopf. It then identifies the underlying block device associated with the declared volume. Once the correct device has been identified, the operator applies encryption using LUKS tooling.</p>
+<p>The process includes the following steps:</p>
 <ol class="arabic simple">
-<li><p>Event Detection: The operator watches for the encryption lifecycle and detects, e.g., the creation of a new custom resource via Kopf’s control loop.</p></li>
-<li><p>Volume Identification: The operator identifies the underlying block device associated with the declared volume, in this case a Cinder-backed device attached to the node.</p></li>
-<li><p>Encryption Enforcement: Using LUKS tooling, the Operator:</p></li>
+<li><p>Detect the creation of the encrypted volume custom resource.</p></li>
+<li><p>Identify the Cinder-backed block device attached to the node.</p></li>
+<li><p>Initialise the device using cryptsetup luksFormat, if it has not already been formatted.</p></li>
+<li><p>Open the encrypted device using cryptsetup luksOpen.</p></li>
+<li><p>Use a passphrase stored in a Kubernetes Secret.</p></li>
+<li><p>Create a mapped device under /dev/mapper.</p></li>
+<li><p>Create a filesystem, such as ext4, on the mapped device.</p></li>
+<li><p>Report completion through logs and resource status.</p></li>
 </ol>
-<ul class="simple">
-<li><p>Initializes an init-container and formats the device as an encrypted device using the command cryptsetup luksFormat if not already formatted.</p></li>
-<li><p>It then opens it using cryptsetup luksOpen. This requires a passphrase, which is passed as a Kubernetes secret, and creates a virtual device in the /dev/mapper directory. (Red Hat, 2026)</p></li>
-<li><p>A filesystem, e.g., ext4, is then created on the virtual device mapper for use.</p></li>
-</ul>
-<ol class="arabic simple" start="4">
-<li><p>Completion and Status Reporting: After successful encryption, the operator records the encryption status via logs, which allows for verification that encryption has been enforced.
-This process is fully automated and does not require manual intervention.</p></li>
-</ol>
+<p>This demonstrates that encryption can be performed automatically and consistently without requiring researchers to execute cryptographic commands manually.</p>
 </section>
 <section id="validation-and-results">
 <h2>Validation and Results<a class="headerlink" href="#validation-and-results" title="Permalink to this heading">#</a></h2>
-<p>Encryption is validated to be enforced by direct inspection and functional testing:</p>
+<p>The proof of concept was validated through direct inspection and functional testing.
+Creating a custom resource successfully triggered the operator event handler. The operator reconciled the declared desired state and performed the required actions to configure encryption on the Cinder-backed storage volume.</p>
+<p>Encryption was confirmed by inspecting the creation of the mapped encrypted device under /dev/mapper/cryptdisk. The expected volume size was also displayed in OpenStack, confirming that the encrypted device corresponded to the dynamically provisioned Cinder volume.</p>
+<p>The proof of concept demonstrates that:</p>
 <ul class="simple">
-<li><p>The creation of a custom resource triggers the operator’s event handler. Based on the desired state declared in the resource, the operator reconciles the state by performing the required actions to configure and manage the Cinder storage encryption.</p></li>
-<li><p>Confirmation that the underlying block-storage device is encrypted by inspecting the /dev/mapper/cryptdisk is created, and the specified volume size is shown in OpenStack.</p></li>
-<li><p>The approach used for encryption is dynamically provisioning the block device rather than using static device.</p></li>
-<li><p>Encryption happens predictably and consistently which demonstrates that the operator model is suitable for enforcing policy-driven encryption.</p></li>
+<li><p>Kubernetes custom resources can express encryption intent.</p></li>
+<li><p>A Kopf-based operator can detect lifecycle events.</p></li>
+<li><p>LUKS encryption can be applied programmatically.</p></li>
+<li><p>Dynamic block volumes can be encrypted without manual user intervention.</p></li>
+<li><p>Encryption can be enforced as a platform policy.</p></li>
 </ul>
-<p>These validation steps show that it is technically feasible to enforce encryption on a Cinder block storage using Kubernetes Operation in a TRE environment.</p>
+<p>These results show that the operator model is technically feasible for enforcing policy-driven encryption in a TRE environment.</p>
 </section>
-<section id="current-limitations">
-<h2>Current Limitations<a class="headerlink" href="#current-limitations" title="Permalink to this heading">#</a></h2>
-<p>The current implementation deliberately excludes certain critical aspects required for production readiness, such as key vault integration, which is outside the initial feasibility scope.</p>
+<section id="current-limitations-of-the-proof-of-concept">
+<h2>Current Limitations of the Proof of Concept<a class="headerlink" href="#current-limitations-of-the-proof-of-concept" title="Permalink to this heading">#</a></h2>
+<p>Although the proof of concept validates the core encryption workflow, several limitations remain.</p>
+<p>The most important limitation is key management. The current implementation uses Kubernetes Secrets to store encryption material. This is acceptable for early functional testing, but it is not sufficient for a production TRE because Kubernetes Secrets do not provide the required level of external ownership, auditability, versioning, and institutional separation.</p>
+<p>The proof of concept also focuses mainly on the creation stage of the encryption lifecycle. It does not yet fully handle update, deletion, detachment, reattachment, node failure, or recovery scenarios.</p>
+<p>The current limitations are therefore:</p>
 <ul class="simple">
-<li><p>Key Management: Encryption keys are currently managed locally using Kubernetes secrets. Using an externally managed key (e.g., HashiCorp Vault) has been identified as the next step.</p></li>
-<li><p>The PoC currently focuses on the creation step in the encryption lifecycle, and the handling of updating, deletion, detachment, reattachment, and node failure scenarios is not yet implemented.</p></li>
+<li><p>Keys are stored locally using Kubernetes Secrets.</p></li>
+<li><p>External key management is not yet implemented in the initial proof of concept.</p></li>
+<li><p>Key rotation is not fully handled in the basic implementation.</p></li>
+<li><p>Deletion and cleanup workflows require further development.</p></li>
+<li><p>Node failure and reattachment scenarios are not yet covered.</p></li>
+<li><p>Production hardening and performance evaluation remain future work.</p></li>
 </ul>
+<p>These limitations lead directly to the need for Vault integration.</p>
 <pre  class="mermaid">
         graph TD
     %% Define Subgraphs
@@ -941,12 +982,12 @@ This process is fully automated and does not require manual intervention.</p></l
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="cloud_encryption.html"
+       href="native_openstack.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Native Cloud Provider Encryption (OpenStack Cinder)</p>
+        <p class="prev-next-title">Native Cloud Provider Encryption Using OpenStack Cinder</p>
       </div>
     </a>
     <a class="right-next"
@@ -954,7 +995,7 @@ This process is fully automated and does not require manual intervention.</p></l
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Vault Integration</p>
+        <p class="prev-next-title">Vault integration for institution-managed key management</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -974,13 +1015,12 @@ This process is fully automated and does not require manual intervention.</p></l
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#kubernetes-operator-driven-luks-encryption-using-kubernetes-secrets">Kubernetes Operator driven LUKS encryption using Kubernetes Secrets</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#purpose-and-scope">Purpose and Scope</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#scope-and-objectives-of-the-poc">Scope and Objectives of the PoC</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#proposed-kubernetes-operator-based-approach">Proposed Kubernetes Operator-Based Approach</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#proof-of-concept-luks-encryption-using-kubernetes-secrets">Proof of Concept: LUKS Encryption Using Kubernetes Secrets</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture-overview">Architecture Overview</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operator-activities-and-control-flow">Operator Activities and Control Flow</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operator-control-flow">Operator Control Flow</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validation-and-results">Validation and Results</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#current-limitations">Current Limitations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#current-limitations-of-the-proof-of-concept">Current Limitations of the Proof of Concept</a></li>
 </ul>
   </nav></div>
 

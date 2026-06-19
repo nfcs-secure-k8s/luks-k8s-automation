@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Vault Integration &#8212; Secure K8s Storage</title>
+    <title>Vault integration for institution-managed key management &#8212; Secure K8s Storage</title>
   
   
   
@@ -65,7 +65,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'vault';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="OIDC Integration" href="oidc.html" />
+    <link rel="next" title="OIDC Integration for Federated Access Control" href="oidc.html" />
     <link rel="prev" title="Part A: Kubernetes Operator-Based Approach" href="poc_luks.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -168,12 +168,11 @@ const thebe_selector_output = ".output, .cell_output"
             </li>
         </ul>
         <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cloud_encryption.html">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native_openstack.html">Native Cloud Provider Encryption Using OpenStack Cinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="poc_luks.html">Part A: Kubernetes Operator-Based Approach</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Vault Integration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Vault integration for institution-managed key management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration for Federated Access Control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="csi_driver.html">Part B: CSI Driver Approach</a></li>
 </ul>
 
@@ -313,7 +312,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Vault Integration</h1>
+    <h1>Vault integration for institution-managed key management</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -323,12 +322,8 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-integration-for-key-management-and-rotation">Vault Integration for Key Management and Rotation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#purpose-of-vault-integration">Purpose of Vault Integration</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-design">Implementation Design</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-version-synchronisation">Vault Version Synchronisation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operator-driven-key-rotation">Operator-Driven Key Rotation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-and-key-deletion">Volume and Key deletion</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-version-synchronisation-and-key-rotation">Vault Version Synchronisation and Key Rotation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deletion-of-volume-and-key">Deletion of Volume and Key</a></li>
 </ul>
             </nav>
         </div>
@@ -340,68 +335,56 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="vault-integration">
-<h1>Vault Integration<a class="headerlink" href="#vault-integration" title="Permalink to this heading">#</a></h1>
-<section id="vault-integration-for-key-management-and-rotation">
-<h2>Vault Integration for Key Management and Rotation<a class="headerlink" href="#vault-integration-for-key-management-and-rotation" title="Permalink to this heading">#</a></h2>
-<p>In order for different institutions to manage their own encryption keys, we move beyond static or local storage methods and integrate with HashiCorp Vault. This enables centralized key storage, version tracking, controlled ownership of keys, and auditable key lifecycle management.</p>
-</section>
-<section id="purpose-of-vault-integration">
-<h2>Purpose of Vault Integration<a class="headerlink" href="#purpose-of-vault-integration" title="Permalink to this heading">#</a></h2>
-<p>The initial proof of concept we introduced earlier demonstrated that block storage can be encrypted using Kubernetes, an operator, and LUKS. However, this does not provide the level of governance, auditability, and controlled life cycle required in a Trusted Research Environment.
-The Vault integration was therefore introduced to address three requirements:</p>
-<ul class="simple">
-<li><p>centralized key storage</p></li>
-<li><p>controlled key rotation</p></li>
-<li><p>secure deletion of keys when volumes are destroyed</p></li>
-</ul>
-</section>
-<section id="implementation-design">
-<h2>Implementation Design<a class="headerlink" href="#implementation-design" title="Permalink to this heading">#</a></h2>
-<p>Every encrypted volume uses the KV v2 secrets engine in HashiCorp Vault, following a tenancy-aware path structure: <code class="docutils literal notranslate"><span class="pre">/secret/tenants/&lt;institution&gt;/luks-key/&lt;volume-name&gt;</span></code>.</p>
-<p>When a new volume is created, the Operator checks if a key exists for that volume and if not it creates one using a new 256-bits value using <code class="docutils literal notranslate"><span class="pre">secrets.token_hex(32)</span></code> and stores it in vault. This creates a unique per volume key while allowing key ownership to be separated from storage backends.</p>
-<p>A design decision was made for initial key per volume to be generated by the Operator but <strong>the user is required to replace</strong> the initial key with their own value in the Vault UI. This is to ensure that each institution manage the ownership of their keys rather than being managed by the platform owner.</p>
-</section>
-<section id="vault-version-synchronisation">
-<h2>Vault Version Synchronisation<a class="headerlink" href="#vault-version-synchronisation" title="Permalink to this heading">#</a></h2>
-<p>To detect vault key changes by the user or system, the Operator uses a synchronisation function to detect the vault key version change. It uses the Kopf timer function for detection, which runs every 30 seconds and checks for a vault version change.
-The Operator reads the current secret metadata from the vault to retrieve the KV version number associated with the stored key. The version number is then written back to the custom resource in two places:</p>
-<ul class="simple">
-<li><p>as a metadata <code class="docutils literal notranslate"><span class="pre">annotation:</span> <span class="pre">vaultversion</span></code></p></li>
-<li><p>as a status field: <code class="docutils literal notranslate"><span class="pre">current_vault_version</span></code></p></li>
-</ul>
-<p>This mechanism provides the following benefits:</p>
-<ul class="simple">
-<li><p>Enables the Operator to have visibility on the vault-backend key state</p></li>
-<li><p>Provides the Operator a Kubernetes-native trigger point for vault key changes and rotation.</p></li>
-</ul>
-</section>
-<section id="operator-driven-key-rotation">
-<h2>Operator-Driven Key Rotation<a class="headerlink" href="#operator-driven-key-rotation" title="Permalink to this heading">#</a></h2>
-<p>The second controller function watches for changes in the <code class="docutils literal notranslate"><span class="pre">metadata.annotations.vaultversion</span></code> field for a version number change. When the Operator detects a version number increase, it knows a key change has been made and then dispatches a job to perform the following:</p>
+  <section id="vault-integration-for-institution-managed-key-management">
+<h1>Vault integration for institution-managed key management<a class="headerlink" href="#vault-integration-for-institution-managed-key-management" title="Permalink to this heading">#</a></h1>
+<p>The system is extended to integrate with HashiCorp Vault to manage encryption keys managed by the institution. Vault enables centralised secret storage, versioning, access control, audit logging and managed key life cycle management.</p>
+<p>Vault integration is designed to go beyond local Kubernetes Secrets, providing a mechanism that enables each institution to autonomously manage its own encryption keys. This is particularly relevant in the case of a federated TRE, where separate institutions may have distinct governance, regulatory and security requirements.</p>
+<p>Three major needs for vault integration:</p>
 <ol class="arabic simple">
-<li><p>reads the new key from the latest Vault version</p></li>
-<li><p>reads the previous key from the prior Vault version</p></li>
-<li><p>identifies the node currently associated with the encrypted volume</p></li>
-<li><p>dispatches a Kubernetes Job to that node</p></li>
-<li><p>performs LUKS rekeying using:</p></li>
+<li><p>Auditable and centralised key storage.</p></li>
+<li><p>Control of key rotation.</p></li>
+<li><p>Secure erasure of the key when the volume is deleted.</p></li>
 </ol>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">cryptsetup</span> <span class="pre">luksAddKey</span></code></p></li>
-<li><p>followed by <code class="docutils literal notranslate"><span class="pre">cryptsetup</span> <span class="pre">luksRemoveKey</span></code></p></li>
-</ul>
-<p>After the key rotation is complete, the encrypted volume is updated in place. The Operator records the processed version in the resource status so that the rotation is not repeated unnecessarily.</p>
-</section>
-<section id="volume-and-key-deletion">
-<h2>Volume and Key deletion<a class="headerlink" href="#volume-and-key-deletion" title="Permalink to this heading">#</a></h2>
-<p>Another vault integration feature performed by the Operator is the deletion of the encrypted volume and key. To do this, the Operator performs the following:</p>
+<p>Each encrypted volume employs the Vault KV v2 secrets engine with a tenancy-aware path structure:</p>
+<p>/secret/tenants/<institution>/luks-key/<volume-name>
+​
+When a new encrypted volume is established, the operator will verify if a key already exists for that volume. If no key exists, the operator creates a first 256-bit value using secrets.token_hex(32) and saves it in Vault.</p>
+<p>This provides a unique key per volume and decouples the key ownership from the underlying storage backend.</p>
+<p>A major design choice is that the operator might create the initial key, but the expectation is that the institution or user will overwrite it with their own key via the Vault interface. It provides a bring-your-own-key paradigm, ensuring that long-term ownership of keys remains with the institution rather than the platform operator.</p>
+<section id="vault-version-synchronisation-and-key-rotation">
+<h2>Vault Version Synchronisation and Key Rotation<a class="headerlink" href="#vault-version-synchronisation-and-key-rotation" title="Permalink to this heading">#</a></h2>
+<p>After Vault has been introduced as the key management backend, the operator also needs to detect when a key has changed.</p>
+<p>To support this, the operator uses a synchronisation function that checks the Vault key version. A Kopf timer runs periodically, for example every 30 seconds, and reads the current secret metadata from Vault. The operator retrieves the KV version number associated with the stored key and writes that version back into the Kubernetes custom resource.</p>
+<p>The version is recorded in two places:</p>
+<p>metadata.annotations.vaultversion
+status.current_vault_version</p>
+<p>This provides a Kubernetes-native way for the operator to track Vault-side key changes.</p>
+<p>When the operator detects that the Vault version number has increased, it interprets this as a key rotation event. A second controller function then performs the rekeying workflow.</p>
+<p>The rotation process is:</p>
 <ol class="arabic simple">
-<li><p>Pod eviction to release active disk handles</p></li>
-<li><p>janitor job execution on the relevant node to close the LUKS device mapper</p></li>
-<li><p>Vault secret destruction if deletion policy is set to Delete</p></li>
-<li><p>PVC deletion if the deletion policy is set to Delete</p></li>
+<li><p>Read the latest key from the current Vault version.</p></li>
+<li><p>Read the previous key from the prior Vault version.</p></li>
+<li><p>Identify the node currently associated with the encrypted volume.</p></li>
+<li><p>Dispatch a Kubernetes Job to that node.</p></li>
+<li><p>Add the new key using cryptsetup luksAddKey.</p></li>
+<li><p>Remove the old key using cryptsetup luksRemoveKey.</p></li>
+<li><p>Update the custom resource status to record the processed version.</p></li>
 </ol>
-<p>This action is important as it ensures that recovery of the plaintext data becomes substantially harder when the encrypted volume and keys are deleted, as long as no unmanaged copies of keys exist elsewhere.</p>
+<p>This ensures that the volume is updated in place and that the same rotation event is not processed repeatedly.</p>
+</section>
+<section id="deletion-of-volume-and-key">
+<h2>Deletion of Volume and Key<a class="headerlink" href="#deletion-of-volume-and-key" title="Permalink to this heading">#</a></h2>
+<p>Vault integration also provides the controlled deletion of encrypted volumes and the keys associated with them.</p>
+<p>When an encrypted volume is destroyed, the operator executes a cleanup workflow. This may involve evicting pods that still have active disk handles, executing a janitor task on the corresponding node, closing the LUKS device mapper, erasing the Vault secret and deleting the PVC based on the chosen deletion policy.</p>
+<p>The deletion process is:</p>
+<ol class="arabic simple">
+<li><p>Evict the pods using the encrypted volume.</p></li>
+<li><p>Run a janitor job on the correct node.</p></li>
+<li><p>Close the active LUKS device mapper.</p></li>
+<li><p>If the deletion policy is set to Delete, destroy the Vault secret.
+5.. If the deletion policy is Delete, delete the PVC.</p></li>
+</ol>
+<p>This lifecycle is significant because encrypted storage is only as secure as the key lifecycle around it. If the encrypted drive is erased but the key is still available, data may still be recovered from unmanaged copies or snapshots. On the other hand, if there are no unmanaged copies of the key elsewhere, removing the key makes recovering plaintext data much more difficult.</p>
 </section>
 </section>
 
@@ -449,7 +432,7 @@ The Operator reads the current secret metadata from the vault to retrieve the KV
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">OIDC Integration</p>
+        <p class="prev-next-title">OIDC Integration for Federated Access Control</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -469,12 +452,8 @@ The Operator reads the current secret metadata from the vault to retrieve the KV
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-integration-for-key-management-and-rotation">Vault Integration for Key Management and Rotation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#purpose-of-vault-integration">Purpose of Vault Integration</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation-design">Implementation Design</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-version-synchronisation">Vault Version Synchronisation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#operator-driven-key-rotation">Operator-Driven Key Rotation</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#volume-and-key-deletion">Volume and Key deletion</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vault-version-synchronisation-and-key-rotation">Vault Version Synchronisation and Key Rotation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#deletion-of-volume-and-key">Deletion of Volume and Key</a></li>
 </ul>
   </nav></div>
 

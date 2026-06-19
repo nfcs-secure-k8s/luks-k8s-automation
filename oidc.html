@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>OIDC Integration &#8212; Secure K8s Storage</title>
+    <title>OIDC Integration for Federated Access Control &#8212; Secure K8s Storage</title>
   
   
   
@@ -502,7 +502,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Part B: CSI Driver Approach" href="csi_driver.html" />
-    <link rel="prev" title="Vault Integration" href="vault.html" />
+    <link rel="prev" title="Vault integration for institution-managed key management" href="vault.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -604,12 +604,11 @@ window.runMermaid = runMermaid;</script>
             </li>
         </ul>
         <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cloud_encryption.html">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native_openstack.html">Native Cloud Provider Encryption Using OpenStack Cinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="poc_luks.html">Part A: Kubernetes Operator-Based Approach</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault Integration</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">OIDC Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault integration for institution-managed key management</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">OIDC Integration for Federated Access Control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="csi_driver.html">Part B: CSI Driver Approach</a></li>
 </ul>
 
@@ -747,7 +746,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>OIDC Integration</h1>
+    <h1>OIDC Integration for Federated Access Control</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -761,11 +760,21 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="oidc-integration">
-<h1>OIDC Integration<a class="headerlink" href="#oidc-integration" title="Permalink to this heading">#</a></h1>
-<p>Federated access with OpenID Connect (OIDC) integration with Vault simplifies the authentication flow by allowing users to use their existing institution’s ID for secure access.</p>
-<p>In this setup, Vault acts as the Relying Party (client) and MyAccessID as the identity Provider (IdP).</p>
-<p>The flow diagram below shows how external identities, such as user logins, are translated into specific internal permissions within Vault using Group aliases. Vault Group’s alias is useful because permission is managed at the group level rather than for individual users. This method allows new users who join, e.g. the “physics dept to automatically inherit the correct luks-policy without being added by the admin.</p>
+  <section id="oidc-integration-for-federated-access-control">
+<h1>OIDC Integration for Federated Access Control<a class="headerlink" href="#oidc-integration-for-federated-access-control" title="Permalink to this heading">#</a></h1>
+<p>In a federated TRE, users should not need separate local Vault accounts. Instead, they should be able to authenticate using their existing institutional identity.</p>
+<p>OpenID Connect can support this model by allowing Vault to act as the relying party and an institutional identity provider, such as MyAccessID, to act as the identity provider.</p>
+<p>In this model, users authenticate through their institution. Vault then maps external identity claims to internal Vault entities and groups. Group aliases can be used to connect an external institutional group, such as a department or project group, to a Vault policy.</p>
+<p>This approach is useful because permissions are managed at the group level rather than individually for each user. For example, when a new researcher joins the physics department, membership of the relevant institutional group can automatically grant the correct Vault policy for accessing that department’s LUKS keys.</p>
+<p>OIDC integration therefore supports:</p>
+<ul class="simple">
+<li><p>Federated authentication.</p></li>
+<li><p>Institution-based access control.</p></li>
+<li><p>Reduced manual user administration.</p></li>
+<li><p>Group-level Vault policy assignment.</p></li>
+<li><p>Better alignment with TRE governance models.</p></li>
+</ul>
+<p>This completes the progression from basic operator-driven encryption, to external key management, to federated identity-based access control.</p>
 <pre  class="mermaid">
         graph TD
     subgraph &quot;1. External Authentication (MyAccessID)&quot;
@@ -840,7 +849,7 @@ document.write(`
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Vault Integration</p>
+        <p class="prev-next-title">Vault integration for institution-managed key management</p>
       </div>
     </a>
     <a class="right-next"

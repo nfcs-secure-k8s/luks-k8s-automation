@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <title>Native Cloud Provider Encryption (OpenStack Cinder) &#8212; Secure K8s Storage</title>
+    <title>Native Cloud Provider Encryption Using OpenStack Cinder &#8212; Secure K8s Storage</title>
   
   
   
@@ -62,7 +62,7 @@ const thebe_selector_input = "pre"
 const thebe_selector_output = ".output, .cell_output"
 </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'cloud_encryption';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'native_openstack';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Part A: Kubernetes Operator-Based Approach" href="poc_luks.html" />
@@ -168,12 +168,11 @@ const thebe_selector_output = ".output, .cell_output"
             </li>
         </ul>
         <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Native Cloud Provider Encryption Using OpenStack Cinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="poc_luks.html">Part A: Kubernetes Operator-Based Approach</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault Integration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault integration for institution-managed key management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration for Federated Access Control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="csi_driver.html">Part B: CSI Driver Approach</a></li>
 </ul>
 
@@ -229,7 +228,7 @@ const thebe_selector_output = ".output, .cell_output"
       
       
       
-      <li><a href="_sources/cloud_encryption.md" target="_blank"
+      <li><a href="_sources/native_openstack.md" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -300,9 +299,7 @@ document.write(`
   </button>
 `);
 </script>
-<label class="sidebar-toggle secondary-toggle btn btn-sm" for="__secondary"title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="fa-solid fa-list"></span>
-</label>
+
 </div></div>
       
     </div>
@@ -313,20 +310,11 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Native Cloud Provider Encryption (OpenStack Cinder)</h1>
+    <h1>Native Cloud Provider Encryption Using OpenStack Cinder</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
             
-            <div>
-                <h2> Contents </h2>
-            </div>
-            <nav aria-label="Page">
-                <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#strengths">Strengths</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#limitations-in-a-tre-context">Limitations in a TRE context</a></li>
-</ul>
-            </nav>
         </div>
     </div>
 </div>
@@ -336,23 +324,14 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="native-cloud-provider-encryption-openstack-cinder">
-<h1>Native Cloud Provider Encryption (OpenStack Cinder)<a class="headerlink" href="#native-cloud-provider-encryption-openstack-cinder" title="Permalink to this heading">#</a></h1>
-<p>Cloud Providers like OpenStack provides encryption at the block storage layer by integrating the cinder block storage service with Barbican Key Management Service and designed to encrypt data at rest in the event that the storage is compromised (Red Hat, 2023). It uses encryption volume types and encryption occurs at the infrastructure level which is transparent to the user.</p>
-<section id="strengths">
-<h2>Strengths<a class="headerlink" href="#strengths" title="Permalink to this heading">#</a></h2>
-<p>Native cinder encryption is mature and widely adopted. It benefits from:
-Operational simplicity: It is handled at the storage layer and does not need additional components e.g. privilege containers, init-containers with Kubernetes or workload layer.
-Transparent usage: Workload does not need additional code changes and encryption volumes behaves like any standard block device.
-Key management: Integrates with OpenStack Barbican by default (OpenStack, 2025).</p>
-</section>
-<section id="limitations-in-a-tre-context">
-<h2>Limitations in a TRE context<a class="headerlink" href="#limitations-in-a-tre-context" title="Permalink to this heading">#</a></h2>
-<p>While OpenStack native cinder encryption has some benefits, when evaluated against the requirements for Kubernetes-based storage encryption in a Federated TRE platform it presents some limitations as follows:</p>
-<p>Key Management: Since research projects often requires explicit control over who owns encryption keys for which dataset the tight coupling of keys to the infrastructure layer which is often outside the control of Kubernetes operator limits the ability to enforce encryption policies that aligns with Kubernetes namespaces, tenants and research projects.</p>
-<p>TRE-Specific policies: It is difficult to define per-project key isolations, research-domain-specific controls since OpenStack native cinder encryption applies broadly at the infrastructure level. (Red Hat, 2023)</p>
-<p>Although native cloud provider like OpenStack cinder encryption provides a strong baseline for data-at-rest encryption which is fit for general purpose. However, in the context of TRE, federated platform that requires portability, transparency and Kubernetes-native controls, these requirements are key concerns. These limitations hereby motivate exploration of alternative models or implementations.</p>
-</section>
+  <section id="native-cloud-provider-encryption-using-openstack-cinder">
+<h1>Native Cloud Provider Encryption Using OpenStack Cinder<a class="headerlink" href="#native-cloud-provider-encryption-using-openstack-cinder" title="Permalink to this heading">#</a></h1>
+<p>OpenStack Cinder supports encryption at the block storage layer, usually through integration with Barbican as the key management service. This allows volumes to be encrypted at rest, with encryption handled transparently by the infrastructure layer.</p>
+<p>This model has several strengths. It is mature, widely used, and operationally simple. Because encryption is handled below the workload layer, application code does not need to change. Users can consume encrypted volumes in much the same way as standard block devices. In addition, using Barbican provides a standard OpenStack-native approach to key management.</p>
+<p>However, while native Cinder encryption is suitable for many general-purpose cloud environments, it has limitations in the context of a federated TRE.</p>
+<p>The key limitation is ownership and control. In a TRE, different institutions may need exclusive control over the keys used to protect their own research data. If encryption keys are managed primarily at the infrastructure level, the hosting administrator may retain privileged control over key management. This weakens the separation of responsibilities between the infrastructure provider and the data owner.</p>
+<p>A second limitation is policy alignment. Kubernetes workloads are usually organised around namespaces, tenants, projects, and research groups. Native Cinder encryption does not naturally expose Kubernetes-native policy controls for per-project or per-institution encryption behaviour. As a result, it can be difficult to express research-specific encryption requirements directly through Kubernetes.</p>
+<p>For these reasons, native OpenStack Cinder encryption provides an important baseline but does not fully satisfy the requirements of a federated TRE. This motivates the exploration of a Kubernetes Operator-driven encryption model.</p>
 </section>
 
     <script type="text/x-thebe-config">
@@ -409,22 +388,6 @@ Key management: Integrates with OpenStack Barbican by default (OpenStack, 2025).
             </div>
             
             
-              
-                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
-
-
-  <div class="sidebar-secondary-item">
-  <div class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> Contents
-  </div>
-  <nav class="bd-toc-nav page-toc">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#strengths">Strengths</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#limitations-in-a-tre-context">Limitations in a TRE context</a></li>
-</ul>
-  </nav></div>
-
-</div></div>
               
             
           </div>

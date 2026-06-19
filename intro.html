@@ -65,7 +65,7 @@ const thebe_selector_output = ".output, .cell_output"
     <script>DOCUMENTATION_OPTIONS.pagename = 'intro';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Background and Context" href="background_storage_risk.html" />
+    <link rel="next" title="User and Stakeholder Requirements" href="stackholder_requirements.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -169,12 +169,11 @@ const thebe_selector_output = ".output, .cell_output"
             </li>
         </ul>
         <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="background_storage_risk.html">Background and Context</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stackholder_requirements.html">User and Stakeholder Requirements</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cloud_encryption.html">Native Cloud Provider Encryption (OpenStack Cinder)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native_openstack.html">Native Cloud Provider Encryption Using OpenStack Cinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="poc_luks.html">Part A: Kubernetes Operator-Based Approach</a></li>
-<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault Integration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vault.html">Vault integration for institution-managed key management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="oidc.html">OIDC Integration for Federated Access Control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="csi_driver.html">Part B: CSI Driver Approach</a></li>
 </ul>
 
@@ -324,10 +323,8 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#executive-summary">Executive Summary</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#current-maturity">Current Maturity:</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#executive-summary">Executive Summary</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background-and-context">Background and Context</a></li>
 </ul>
             </nav>
         </div>
@@ -343,20 +340,17 @@ document.write(`
 <h1>Automated Encryption of Kubernetes Block Storage for Trusted Research Environment<a class="headerlink" href="#automated-encryption-of-kubernetes-block-storage-for-trusted-research-environment" title="Permalink to this heading">#</a></h1>
 <section id="executive-summary">
 <h2>Executive Summary<a class="headerlink" href="#executive-summary" title="Permalink to this heading">#</a></h2>
-<p>This report evaluates the automation of per-volume Kubernetes block Cinder storage in a Trusted Research Environment (TRE) environment using LUKS (Linux Unified Key setup), Kubernetes custom operator with Kopf. The proposed solution uses Kubernetes Operator using Python Kopf to manage LUKS-based encryption of OpenStack Cinder-backed block volumes.</p>
-<ul class="simple">
-<li><p>Watch for custom resources when submitted by the user or the system.</p></li>
-<li><p>Triggers the encryption of the volume based on the life cycle state.</p></li>
-<li><p>Enforces the encryption of the volume at the creation time.</p></li>
-</ul>
-<p>This approach demonstrates that per volume encryption can be policy-driven, enforced and automated rather than using manual operations.</p>
-<section id="current-maturity">
-<h3>Current Maturity:<a class="headerlink" href="#current-maturity" title="Permalink to this heading">#</a></h3>
-<ul class="simple">
-<li><p>Functional proof-of-concept implemented and validated.</p></li>
-<li><p>Using local Key Management System (Kubernetes secrets). Integration of HashiCorp vault still pending.</p></li>
-</ul>
+<p>This report evaluates an approach for automating the encryption of Kubernetes block storage in a Trusted Research Environment (TRE). The proposed solution uses a Kubernetes Operator built with the Python Kopf framework to manage LUKS-based encryption of OpenStack Cinder-backed block volumes.
+In conventional OpenStack deployments, encryption is commonly handled through Cinder volume encryption integrated with Barbican for key management. While this provides a strong infrastructure-level baseline for encryption at rest, it does not always meet the governance needs of federated research environments. In particular, it can be difficult to provide strong per-project, per-institution, or research-domain-specific key ownership when the infrastructure provider controls the underlying key management service.
+The proof of concept developed for this project demonstrates that per-volume encryption can be automated, policy-driven, and enforced through Kubernetes-native resources. The operator watches for custom resources, identifies the associated block volume, applies LUKS encryption, and reports status back through Kubernetes.</p>
+<p>Kubernetes Secrets for key storage were used in the initial implementation and have been validated as a functional proof of concept. The next stage integrates HashiCorp Vault to support institution-managed keys, key versioning, rotation, deletion policies, and auditability. OIDC integration is also considered to support federated user authentication and group-based Vault access.</p>
 </section>
+<section id="background-and-context">
+<h2>Background and Context<a class="headerlink" href="#background-and-context" title="Permalink to this heading">#</a></h2>
+<p>Trusted Research Environments are used to support research involving sensitive data, including healthcare, financial, institutional, and other regulated datasets. In these environments, storage security is a core requirement because researchers may create, attach, detach, and delete persistent volumes during the lifecycle of an experiment.
+A central risk is that storage media or backend storage systems may be compromised, copied, mishandled, or disposed of incorrectly. If block storage is not encrypted, an attacker or unauthorised administrator with access to the storage backend may be able to read sensitive data directly. Encrypting storage reduces this risk and ensures that data remains unreadable without the correct decryption key.
+Storage encryption also supports compliance with regulatory and organisational requirements such as GDPR and ISO 27001. However, in a TRE, encryption alone is not sufficient. The ownership, lifecycle, access control, and auditability of encryption keys are equally important.
+In a federated research environment that requires independent control of keys on their data on collaborative projects or platforms among institutions, these requirements become more complex.</p>
 </section>
 <div class="toctree-wrapper compound">
 </div>
@@ -393,11 +387,11 @@ document.write(`
                   
 <div class="prev-next-area">
     <a class="right-next"
-       href="background_storage_risk.html"
+       href="stackholder_requirements.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Background and Context</p>
+        <p class="prev-next-title">User and Stakeholder Requirements</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -417,10 +411,8 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#executive-summary">Executive Summary</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#current-maturity">Current Maturity:</a></li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#executive-summary">Executive Summary</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#background-and-context">Background and Context</a></li>
 </ul>
   </nav></div>
 
