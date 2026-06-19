@@ -9,12 +9,23 @@
 #   - file: vault
 #   - file: oidc
 
+# format: jb-book
+# root: intro
+# chapters:
+#   - file: background_storage_risk
+#   - file: stackholder_requirements
+#   - file: cloud_encryption
+#   - file: poc_luks
+#   - file: vault
+#   - file: oidc
+#   - file: csi_driver
+
 format: jb-book
 root: intro
 chapters:
-  - file: background_storage_risk
   - file: stackholder_requirements
   - file: cloud_encryption
+  - file: native_openstack.md
   - file: poc_luks
   - file: vault
   - file: oidc

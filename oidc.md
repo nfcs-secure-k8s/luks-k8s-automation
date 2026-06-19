@@ -1,10 +1,22 @@
-## OIDC Integration
+## OIDC Integration for Federated Access Control
 
-Federated access with OpenID Connect (OIDC) integration with Vault simplifies the authentication flow by allowing users to use their existing institution's ID for secure access.
+In a federated TRE, users should not need separate local Vault accounts. Instead, they should be able to authenticate using their existing institutional identity.
 
-In this setup, Vault acts as the Relying Party (client) and MyAccessID as the identity Provider (IdP).
+OpenID Connect can support this model by allowing Vault to act as the relying party and an institutional identity provider, such as MyAccessID, to act as the identity provider.
 
-The flow diagram below shows how external identities, such as user logins, are translated into specific internal permissions within Vault using Group aliases. Vault Group's alias is useful because permission is managed at the group level rather than for individual users. This method allows new users who join, e.g. the "physics dept to automatically inherit the correct luks-policy without being added by the admin.
+In this model, users authenticate through their institution. Vault then maps external identity claims to internal Vault entities and groups. Group aliases can be used to connect an external institutional group, such as a department or project group, to a Vault policy.
+
+This approach is useful because permissions are managed at the group level rather than individually for each user. For example, when a new researcher joins the physics department, membership of the relevant institutional group can automatically grant the correct Vault policy for accessing that department’s LUKS keys.
+
+OIDC integration therefore supports:
+
+- Federated authentication.
+- Institution-based access control.
+- Reduced manual user administration.
+- Group-level Vault policy assignment.
+- Better alignment with TRE governance models.
+
+This completes the progression from basic operator-driven encryption, to external key management, to federated identity-based access control.
 
 ```{mermaid}
 graph TD

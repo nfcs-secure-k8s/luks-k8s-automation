@@ -1,64 +1,99 @@
 # Part A: Kubernetes Operator-Based Approach
 
-## Kubernetes Operator driven LUKS encryption using Kubernetes Secrets
+## Proposed Kubernetes Operator-Based Approach
 
-## Purpose and Scope
+To deal with the limitations of infrastructure-level encryption, this project explores a Kubernetes-native approach using a custom Operator built with Kopf. The operator automates LUKS encryption for Cinder-backed block volumes and allows encryption intent to be declared through a Kubernetes custom resource.
+The purpose of this approach is not to replace all cloud-provider encryption controls, but to provide additional control at the workload and tenant level. By moving the enforcement logic into Kubernetes, encryption can be aligned more closely with namespaces, research projects, institutional ownership, and platform policy.
 
-This section describes the evaluation and implementation of automating Cinder block volume encryption attached to a Kubernetes workload at volume creation time driven by declarative intent expressed using Custom Resource.
+This approach provides several benefits:
 
-## Scope and Objectives of the PoC
+- Encryption can be enforced declaratively.
+- Per-volume encryption can be automated.
+- The platform can apply encryption consistently at creation time.
+- Encryption status can be reported through Kubernetes.
+- Key ownership can later be delegated to an external key management system such as HashiCorp Vault.
+- Institutions can manage their own keys independently of the infrastructure provider.
 
-The main objectives of this PoC is to:
+## Proof of Concept: LUKS Encryption Using Kubernetes Secrets
 
-1. Validate automation of Kubernetes to enforce block-level encryption without manual intervention.
-2. Tests using a custom resource and operator are suitable for expressing encryption intent in a Trusted Research Environment (TRE).
-3. Show that LUKS can be used programmatically to dynamically provision encrypted volumes.
-4. Demonstrate later the integration of an external key management system, e.g., Vault.
+The preliminary proof of concept validates whether a Kubernetes Operator can automate the encryption of Cinder-backed block storage using LUKS.
+The scope of the proof of concept is limited to feasibility and functional correctness. It does not yet aim to provide production-level lifecycle management, performance optimisation, or full failure recovery.
 
-The PoC scope is limited to functional correctness and feasibility rather than production-level attainment and performance optimization of full lifecycle management.
+The proof of concept has four main objectives:
+
+1. Validate that Kubernetes can enforce block-level encryption without manual intervention.
+2. Demonstrate that a custom resource can express encryption intent.
+3. Show that LUKS can be used programmatically to encrypt dynamically provisioned block volumes.
+4. Provide a foundation for future integration with HashiCorp Vault.
 
 ## Architecture Overview
 
-The PoC consists of the following components:
+The proof of concept consists of the following components:
 
-- Kubernetes Operator: A custom Kubernetes operator using the Python-based Kopf framework to watch for lifecycle events, e.g., creating a volume, and then enforces encryption on the volume.
-- Kubernetes Custom Resource: Declares the requirements for an encrypted volume and shows the user or platform intent that storage needs to be encrypted.
-- Containerized Operator Deployment: The operator is packaged as a Docker image using Python 3.9 or newer and deployed onto a cluster as a Kubernetes deployment with appropriate RBAC permissions and Kubernetes secrets.
-- LUKS: The operator uses standard Linux tooling such as LUKS to encrypt the block storage.
-- Block storage: OpenStack Cinder block storage is used as a backend and attached to Kubernetes pods via an existing CSI driver.
+| Component           |                               Purpose                               |
+| ------------------- | :-----------------------------------------------------------------: |
+| Kubernetes Operator | Watches custom resources and enforces encryption lifecycle actions. |
+| Kopf Framework      |           Provides the Python-based operator control loop           |
+| Custom Resource     |     Declares the user or platform intent for encrypted storage.     |
+| LUKS / cryptsetup   |           Performs block-level encryption on the device.            |
+| Kubernetes Secrets  |     Stores the initial proof-of-concept encryption passphrase.      |
+| OpenStack Cinder    |                 Provides the backend block storage.                 |
+| CSI Driver          |          Attaches Cinder volumes to Kubernetes workloads.           |
 
-## Operator Activities and Control Flow
+## Operator Control Flow
 
-When a user or platform creates and submits a custom resource, this creates an encrypted volume resource. The operator performs the following high-level activities:
+When a user or platform creates an encrypted volume custom resource, the operator begins a reconciliation process.
 
-1. Event Detection: The operator watches for the encryption lifecycle and detects, e.g., the creation of a new custom resource via Kopf’s control loop.
-2. Volume Identification: The operator identifies the underlying block device associated with the declared volume, in this case a Cinder-backed device attached to the node.
-3. Encryption Enforcement: Using LUKS tooling, the Operator:
+First, the operator detects the creation event through Kopf. It then identifies the underlying block device associated with the declared volume. Once the correct device has been identified, the operator applies encryption using LUKS tooling.
 
-- Initializes an init-container and formats the device as an encrypted device using the command cryptsetup luksFormat if not already formatted.
-- It then opens it using cryptsetup luksOpen. This requires a passphrase, which is passed as a Kubernetes secret, and creates a virtual device in the /dev/mapper directory. (Red Hat, 2026)
-- A filesystem, e.g., ext4, is then created on the virtual device mapper for use.
+The process includes the following steps:
 
-4. Completion and Status Reporting: After successful encryption, the operator records the encryption status via logs, which allows for verification that encryption has been enforced.
-   This process is fully automated and does not require manual intervention.
+1. Detect the creation of the encrypted volume custom resource.
+2. Identify the Cinder-backed block device attached to the node.
+3. Initialise the device using cryptsetup luksFormat, if it has not already been formatted.
+4. Open the encrypted device using cryptsetup luksOpen.
+5. Use a passphrase stored in a Kubernetes Secret.
+6. Create a mapped device under /dev/mapper.
+7. Create a filesystem, such as ext4, on the mapped device.
+8. Report completion through logs and resource status.
+
+This demonstrates that encryption can be performed automatically and consistently without requiring researchers to execute cryptographic commands manually.
 
 ## Validation and Results
 
-Encryption is validated to be enforced by direct inspection and functional testing:
+The proof of concept was validated through direct inspection and functional testing.
+Creating a custom resource successfully triggered the operator event handler. The operator reconciled the declared desired state and performed the required actions to configure encryption on the Cinder-backed storage volume.
 
-- The creation of a custom resource triggers the operator’s event handler. Based on the desired state declared in the resource, the operator reconciles the state by performing the required actions to configure and manage the Cinder storage encryption.
-- Confirmation that the underlying block-storage device is encrypted by inspecting the /dev/mapper/cryptdisk is created, and the specified volume size is shown in OpenStack.
-- The approach used for encryption is dynamically provisioning the block device rather than using static device.
-- Encryption happens predictably and consistently which demonstrates that the operator model is suitable for enforcing policy-driven encryption.
+Encryption was confirmed by inspecting the creation of the mapped encrypted device under /dev/mapper/cryptdisk. The expected volume size was also displayed in OpenStack, confirming that the encrypted device corresponded to the dynamically provisioned Cinder volume.
 
-These validation steps show that it is technically feasible to enforce encryption on a Cinder block storage using Kubernetes Operation in a TRE environment.
+The proof of concept demonstrates that:
 
-## Current Limitations
+- Kubernetes custom resources can express encryption intent.
+- A Kopf-based operator can detect lifecycle events.
+- LUKS encryption can be applied programmatically.
+- Dynamic block volumes can be encrypted without manual user intervention.
+- Encryption can be enforced as a platform policy.
 
-The current implementation deliberately excludes certain critical aspects required for production readiness, such as key vault integration, which is outside the initial feasibility scope.
+These results show that the operator model is technically feasible for enforcing policy-driven encryption in a TRE environment.
 
-- Key Management: Encryption keys are currently managed locally using Kubernetes secrets. Using an externally managed key (e.g., HashiCorp Vault) has been identified as the next step.
-- The PoC currently focuses on the creation step in the encryption lifecycle, and the handling of updating, deletion, detachment, reattachment, and node failure scenarios is not yet implemented.
+## Current Limitations of the Proof of Concept
+
+Although the proof of concept validates the core encryption workflow, several limitations remain.
+
+The most important limitation is key management. The current implementation uses Kubernetes Secrets to store encryption material. This is acceptable for early functional testing, but it is not sufficient for a production TRE because Kubernetes Secrets do not provide the required level of external ownership, auditability, versioning, and institutional separation.
+
+The proof of concept also focuses mainly on the creation stage of the encryption lifecycle. It does not yet fully handle update, deletion, detachment, reattachment, node failure, or recovery scenarios.
+
+The current limitations are therefore:
+
+- Keys are stored locally using Kubernetes Secrets.
+- External key management is not yet implemented in the initial proof of concept.
+- Key rotation is not fully handled in the basic implementation.
+- Deletion and cleanup workflows require further development.
+- Node failure and reattachment scenarios are not yet covered.
+- Production hardening and performance evaluation remain future work.
+
+These limitations lead directly to the need for Vault integration.
 
 ```{mermaid}
 graph TD
