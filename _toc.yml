@@ -19,3 +19,4 @@ chapters:
   - file: vault
   - file: oidc
   - file: csi_driver
+  - file: cnpg_encrypted_example
