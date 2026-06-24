@@ -1102,7 +1102,7 @@ on-node device path via an ordered RESOLVERS registry:</p>
 <td><p>Auto-generated in Vault at <code class="docutils literal notranslate"><span class="pre">CreateVolume</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><strong>Key fetch at mount</strong></p></td>
-<td><p>Vault Agent sidecar injects key via annotations</p></td>
+<td><p>Vault init-container fetches the key via native K8s Auth API and writes it to a transient, in-memory (emptyDir) volume.</p></td>
 <td><p>Node plugin fetches directly using service account JWT</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>Key rotation trigger</strong></p></td>
@@ -1114,23 +1114,23 @@ on-node device path via an ordered RESOLVERS registry:</p>
 <td><p>Loader DaemonSet — automatic, no SSH required</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>Device path resolution</strong></p></td>
-<td><p>Hard-coded <code class="docutils literal notranslate"><span class="pre">/dev/vdc</span></code> in init container script</p></td>
+<td><p>Resolves underlying block device mapping dynamically using host-level storage lookups.</p></td>
 <td><p>RESOLVERS registry resolves path at runtime for any backing driver</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>Privileged pods</strong></p></td>
-<td><p>Every user workload pod requires <code class="docutils literal notranslate"><span class="pre">privileged:</span> <span class="pre">true</span></code></p></td>
+<td><p>User application container (Jupyter) is completely unprivileged. Elevated root privileges (CAP_SYS_ADMIN) are strictly restricted to short-lived init-containers.</p></td>
 <td><p>Only the node DaemonSet is privileged; user pods are unprivileged</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>Unmount lifecycle</strong></p></td>
-<td><p>No delete handler; LUKS device left open on pod exit</p></td>
+<td><p>Handled via custom CR deletion controller cleanup handlers.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">NodeUnstageVolume</span></code> closes the LUKS device cleanly</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>Backend portability</strong></p></td>
-<td><p>Tied to OpenStack Cinder</p></td>
+<td><p>Storage backend agnostic; can target any raw block storage class layer.</p></td>
 <td><p>Works with any block StorageClass</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>Kubernetes integration</strong></p></td>
-<td><p>Operator process must be running for volumes to work</p></td>
+<td><p>The operator is only required for provisioning and rekeying operations. Existing active user volumes run completely independently if the operator crashes or restarts.</p></td>
 <td><p>Standard CSI; volumes work independently of the operator process</p></td>
 </tr>
 </tbody>
@@ -1177,6 +1177,7 @@ access from within the pod.</p></li>
 </tbody>
 </table>
 </div>
+<p>No delete handler; LUKS device</p>
 </section>
 </section>
 </section>

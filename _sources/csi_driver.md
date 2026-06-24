@@ -303,18 +303,18 @@ kubectl describe pvc my-encrypted-pvc
 
 ## Comparison with the Operator Approach
 
-| Aspect                     | Kopf Operator                                            | CSI Driver                                                          |
-| -------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
-| **User interface**         | Custom Resource (`EncryptedVolume`)                      | Standard PVC (`storageClassName: luks-encrypted`)                   |
-| **Key generation**         | Auto-generated in Vault at CR creation                   | Auto-generated in Vault at `CreateVolume`                           |
-| **Key fetch at mount**     | Vault Agent sidecar injects key via annotations          | Node plugin fetches directly using service account JWT              |
-| **Key rotation trigger**   | 30s timer detects Vault version bump, patches annotation | 30s sync thread annotates PV; rotation applied in `NodeStageVolume` |
-| **AppArmor deployment**    | SSH script run manually on each worker node              | Loader DaemonSet — automatic, no SSH required                       |
-| **Device path resolution** | Hard-coded `/dev/vdc` in init container script           | RESOLVERS registry resolves path at runtime for any backing driver  |
-| **Privileged pods**        | Every user workload pod requires `privileged: true`      | Only the node DaemonSet is privileged; user pods are unprivileged   |
-| **Unmount lifecycle**      | No delete handler; LUKS device left open on pod exit     | `NodeUnstageVolume` closes the LUKS device cleanly                  |
-| **Backend portability**    | Tied to OpenStack Cinder                                 | Works with any block StorageClass                                   |
-| **Kubernetes integration** | Operator process must be running for volumes to work     | Standard CSI; volumes work independently of the operator process    |
+| Aspect                     | Kopf Operator                                                                                                                                                          | CSI Driver                                                          |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **User interface**         | Custom Resource (`EncryptedVolume`)                                                                                                                                    | Standard PVC (`storageClassName: luks-encrypted`)                   |
+| **Key generation**         | Auto-generated in Vault at CR creation                                                                                                                                 | Auto-generated in Vault at `CreateVolume`                           |
+| **Key fetch at mount**     | Vault init-container fetches the key via native K8s Auth API and writes it to a transient, in-memory (emptyDir) volume.                                                | Node plugin fetches directly using service account JWT              |
+| **Key rotation trigger**   | 30s timer detects Vault version bump, patches annotation                                                                                                               | 30s sync thread annotates PV; rotation applied in `NodeStageVolume` |
+| **AppArmor deployment**    | SSH script run manually on each worker node                                                                                                                            | Loader DaemonSet — automatic, no SSH required                       |
+| **Device path resolution** | Resolves underlying block device mapping dynamically using host-level storage lookups.                                                                                 | RESOLVERS registry resolves path at runtime for any backing driver  |
+| **Privileged pods**        | User application container (Jupyter) is completely unprivileged. Elevated root privileges (CAP_SYS_ADMIN) are strictly restricted to short-lived init-containers.      | Only the node DaemonSet is privileged; user pods are unprivileged   |
+| **Unmount lifecycle**      | Handled via custom CR deletion controller cleanup handlers.                                                                                                            | `NodeUnstageVolume` closes the LUKS device cleanly                  |
+| **Backend portability**    | Storage backend agnostic; can target any raw block storage class layer.                                                                                                | Works with any block StorageClass                                   |
+| **Kubernetes integration** | The operator is only required for provisioning and rekeying operations. Existing active user volumes run completely independently if the operator crashes or restarts. | Standard CSI; volumes work independently of the operator process    |
 
 ### Key limitations of the operator approach
 
@@ -343,3 +343,5 @@ that motivated the CSI driver:
 | Cluster where CSI sidecars are unavailable            | Operator                      |
 | Quick PoC on a known single-device-path environment   | Operator is simpler to deploy |
 | Need unprivileged user workload pods                  | **CSI driver**                |
+
+No delete handler; LUKS device
