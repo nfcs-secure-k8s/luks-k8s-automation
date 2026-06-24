@@ -768,7 +768,7 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#supported-backing-storage">Supported Backing Storage</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#provisioning-a-volume">Provisioning a Volume</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparison-with-the-operator-approach">Comparison with the Operator Approach</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-limitations-of-the-operator-approach">Key limitations of the operator approach</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#technical-motivations-for-the-csi-driver">Technical Motivations for the CSI Driver</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use-each-approach">When to use each approach</a></li>
 </ul>
 </li>
@@ -1136,21 +1136,14 @@ on-node device path via an ordered RESOLVERS registry:</p>
 </tbody>
 </table>
 </div>
-<section id="key-limitations-of-the-operator-approach">
-<h3>Key limitations of the operator approach<a class="headerlink" href="#key-limitations-of-the-operator-approach" title="Permalink to this heading">#</a></h3>
-<p>The operator approach was the initial feasibility PoC and has several limitations
-that motivated the CSI driver:</p>
+<section id="technical-motivations-for-the-csi-driver">
+<h3>Technical Motivations for the CSI Driver<a class="headerlink" href="#technical-motivations-for-the-csi-driver" title="Permalink to this heading">#</a></h3>
+<p>While the Kopf Operator model successfully establishes a zero-trust, identity-driven encryption workflow, analyzing the orchestration-layer trade-offs highlighted clear opportunities to optimize the storage architecture via a native CSI driver:</p>
 <ol class="arabic simple">
-<li><p><strong>Hard-coded device path</strong> — <code class="docutils literal notranslate"><span class="pre">/dev/vdc</span></code> is assumed by the init container. Different
-clouds assign different device names, causing silent failures on non-Cinder storage.</p></li>
-<li><p><strong>Privileged workload pods</strong> — Every pod using an encrypted volume must run with
-<code class="docutils literal notranslate"><span class="pre">privileged:</span> <span class="pre">true</span></code>, which is typically blocked by Pod Security Admission in
-production clusters.</p></li>
-<li><p><strong>No unmount lifecycle</strong> — There is no delete handler. When a pod or CR is deleted,
-the LUKS mapper stays open on the node until manually closed or the node reboots.</p></li>
-<li><p><strong>Encryption runs inside the user container</strong> — <code class="docutils literal notranslate"><span class="pre">cryptsetup</span></code> is installed via <code class="docutils literal notranslate"><span class="pre">apk</span></code>
-inside an init container on every pod startup, which is slow and requires internet
-access from within the pod.</p></li>
+<li><p>Separation of Concerns in the Pod Spec: In the Operator model, volume mapping logic must be injected directly into the user’s workload Pod specification via init-containers. The CSI model moves this entire lifecycle completely out of the Pod spec and into the Kubernetes storage fabric, keeping user deployment manifests entirely standard and storage-agnostic.</p></li>
+<li><p>Privilege Confinement to Infrastructure Nodes: Although the Operator successfully keeps the user’s runtime workspace (e.g., Jupyter) completely unprivileged, the ephemeral init-containers still require localized elevated root capabilities (CAP_SYS_ADMIN) to interact with the host’s block devices during startup. The CSI model shifts this requirement entirely onto a dedicated storage DaemonSet, ensuring no tenant-facing pod ever requests elevated capabilities.</p></li>
+<li><p>Storage-Fabric Lifecycle Management The operator uses custom CR deletion handlers to intercept cleanup events and close the LUKS mappers cleanly. But binding the disc lifecycle to a Custom Resource introduces a dependency on the controlplane. Moving to a CSI driver makes unmounting a natural part of the native Kubernetes storage engine’s lifecycle (NodeUnstageVolume), which guarantees reliable disc detachment even in the event of unforeseen node failures.</p></li>
+<li><p>Removal of prebuilt utility images The Operator uses a dedicated utility image (Dockerfile-storage-tool) with pre-compiled cryptsetup binaries to perform orchestration within the init-container. Lowering this to the CSI driver level enables the cluster to use the worker node’s native kernel modules and host utilities directly. This eliminates any need to maintain or pull custom cryptographic images inside the namespace altogether.</p></li>
 </ol>
 </section>
 <section id="when-to-use-each-approach">
@@ -1177,7 +1170,6 @@ access from within the pod.</p></li>
 </tbody>
 </table>
 </div>
-<p>No delete handler; LUKS device</p>
 </section>
 </section>
 </section>
@@ -1248,7 +1240,7 @@ access from within the pod.</p></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#supported-backing-storage">Supported Backing Storage</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#provisioning-a-volume">Provisioning a Volume</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#comparison-with-the-operator-approach">Comparison with the Operator Approach</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-limitations-of-the-operator-approach">Key limitations of the operator approach</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#technical-motivations-for-the-csi-driver">Technical Motivations for the CSI Driver</a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#when-to-use-each-approach">When to use each approach</a></li>
 </ul>
 </li>
