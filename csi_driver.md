@@ -316,24 +316,17 @@ kubectl describe pvc my-encrypted-pvc
 | **Backend portability**    | Storage backend agnostic; can target any raw block storage class layer.                                                                                                | Works with any block StorageClass                                   |
 | **Kubernetes integration** | The operator is only required for provisioning and rekeying operations. Existing active user volumes run completely independently if the operator crashes or restarts. | Standard CSI; volumes work independently of the operator process    |
 
-### Key limitations of the operator approach
+### Technical Motivations for the CSI Driver
 
-The operator approach was the initial feasibility PoC and has several limitations
-that motivated the CSI driver:
+While the Kopf Operator model successfully establishes a zero-trust, identity-driven encryption workflow, analyzing the orchestration-layer trade-offs highlighted clear opportunities to optimize the storage architecture via a native CSI driver:
 
-1. **Hard-coded device path** — `/dev/vdc` is assumed by the init container. Different
-   clouds assign different device names, causing silent failures on non-Cinder storage.
+1. Separation of Concerns in the Pod Spec: In the Operator model, volume mapping logic must be injected directly into the user's workload Pod specification via init-containers. The CSI model moves this entire lifecycle completely out of the Pod spec and into the Kubernetes storage fabric, keeping user deployment manifests entirely standard and storage-agnostic.
 
-2. **Privileged workload pods** — Every pod using an encrypted volume must run with
-   `privileged: true`, which is typically blocked by Pod Security Admission in
-   production clusters.
+2. Privilege Confinement to Infrastructure Nodes: Although the Operator successfully keeps the user’s runtime workspace (e.g., Jupyter) completely unprivileged, the ephemeral init-containers still require localized elevated root capabilities (CAP_SYS_ADMIN) to interact with the host's block devices during startup. The CSI model shifts this requirement entirely onto a dedicated storage DaemonSet, ensuring no tenant-facing pod ever requests elevated capabilities.
 
-3. **No unmount lifecycle** — There is no delete handler. When a pod or CR is deleted,
-   the LUKS mapper stays open on the node until manually closed or the node reboots.
+3. Storage-Fabric Lifecycle Management The operator uses custom CR deletion handlers to intercept cleanup events and close the LUKS mappers cleanly. But binding the disc lifecycle to a Custom Resource introduces a dependency on the controlplane. Moving to a CSI driver makes unmounting a natural part of the native Kubernetes storage engine’s lifecycle (NodeUnstageVolume), which guarantees reliable disc detachment even in the event of unforeseen node failures.
 
-4. **Encryption runs inside the user container** — `cryptsetup` is installed via `apk`
-   inside an init container on every pod startup, which is slow and requires internet
-   access from within the pod.
+4. Removal of prebuilt utility images The Operator uses a dedicated utility image (Dockerfile-storage-tool) with pre-compiled cryptsetup binaries to perform orchestration within the init-container. Lowering this to the CSI driver level enables the cluster to use the worker node’s native kernel modules and host utilities directly. This eliminates any need to maintain or pull custom cryptographic images inside the namespace altogether.
 
 ### When to use each approach
 
@@ -343,5 +336,3 @@ that motivated the CSI driver:
 | Cluster where CSI sidecars are unavailable            | Operator                      |
 | Quick PoC on a known single-device-path environment   | Operator is simpler to deploy |
 | Need unprivileged user workload pods                  | **CSI driver**                |
-
-No delete handler; LUKS device
