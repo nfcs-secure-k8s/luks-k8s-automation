@@ -326,7 +326,7 @@ While the Kopf Operator model successfully establishes a zero-trust, identity-dr
 
 3. **Storage-Fabric Lifecycle Management:** The operator uses custom CR deletion handlers to intercept cleanup events and close the LUKS mappers cleanly. But binding the disc lifecycle to a Custom Resource introduces a dependency on the controlplane. Moving to a CSI driver makes unmounting a natural part of the native Kubernetes storage engine’s lifecycle (NodeUnstageVolume), which guarantees reliable disc detachment even in the event of unforeseen node failures.
 
-4. \*\*Removal of prebuilt utility images The Operator uses a dedicated utility image (Dockerfile-storage-tool) with pre-compiled cryptsetup binaries to perform orchestration within the init-container. Lowering this to the CSI driver level enables the cluster to use the worker node’s native kernel modules and host utilities directly. This eliminates any need to maintain or pull custom cryptographic images inside the namespace altogether.
+4. **Removal of prebuilt utility images:** The Operator uses a dedicated utility image (Dockerfile-storage-tool) with pre-compiled cryptsetup binaries to perform orchestration within the init-container. Lowering this to the CSI driver level enables the cluster to use the worker node’s native kernel modules and host utilities directly. This eliminates any need to maintain or pull custom cryptographic images inside the namespace altogether.
 
 ### When to use each approach
 
